@@ -591,6 +591,36 @@
           <div id="payslip-render"></div>
         </div>
 
+        <!-- ─── PAYROLL (whole team) ─── -->
+        <div id="page-payroll" class="page">
+          <div class="header">
+            <div>
+              <h1 class="h-title">Payroll</h1>
+              <p class="h-sub">Weekly team summary · Irish PAYE/PRSI/USC + 23% employer uplift</p>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn-ghost" onclick="printPayroll()">📄 Print / PDF</button>
+              <button class="btn-ghost" onclick="downloadPayrollCsv()">📤 Export CSV</button>
+              <button class="btn-primary" onclick="toast('Sage / BrightPay file coming Phase 2')">🧾 Export to BrightPay</button>
+            </div>
+          </div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+            <div style="flex:1; min-width:220px;">
+              <label style="font-size:11px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:1px;">Pay period</label>
+              <input type="text" id="payroll-period" readonly value="Week of Monday 25 May 2026" style="width:100%; height:44px; margin-top:6px; padding:0 12px; font-size:15px; background:var(--bg-elevated); border:1px solid var(--border-strong); border-radius:10px; color:var(--text-secondary); font-family:ui-monospace,monospace;">
+            </div>
+            <div style="flex:1; min-width:220px;">
+              <label style="font-size:11px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:1px;">Pay frequency</label>
+              <select id="payroll-freq" style="width:100%; height:44px; margin-top:6px; padding:0 12px; font-size:15px; background:var(--bg-elevated); border:1px solid var(--border-strong); border-radius:10px; color:var(--text-primary);">
+                <option>Weekly</option>
+                <option>Fortnightly</option>
+                <option>Monthly</option>
+              </select>
+            </div>
+          </div>
+          <div id="payroll-render"></div>
+        </div>
+
         <div id="page-settings" class="page">
           <div class="header"><div><h1 class="h-title">Settings</h1><p class="h-sub">Demo data tools</p></div></div>
           <div class="card card-p" style="display:flex; flex-direction:column; gap:8px; align-items:flex-start;">
@@ -707,6 +737,7 @@
       staff:     '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
       audit:     '<path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/>',
       payslip:   '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M9 15h6"/>',
+      payroll:   '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
       settings:  '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
       home:      '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
       me:        '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
@@ -724,6 +755,7 @@
       { id:'leave',        label:'Leave',       icon:'leave',        color:'#6BA4D9', badge:2 },
       { id:'staff',        label:'Staff',       icon:'staff',        color:'#D14B7F' },
       { id:'payslip',      label:'Payslip',     icon:'payslip',      color:'#3FB984' },
+      { id:'payroll',      label:'Payroll',     icon:'payroll',      color:'#E69539' },
       { id:'settings',     label:'Settings',    icon:'settings',     color:'#A07FB5' },
     ];
     const MNAV = [
@@ -799,6 +831,7 @@
 
       // Refresh dynamic pages on navigation so they reflect the latest data.
       if (pageId === 'payslip'     && typeof renderPayslip     === 'function') { try { renderPayslip();     } catch(e){ console.warn(e); } }
+      if (pageId === 'payroll'     && typeof renderPayroll     === 'function') { try { renderPayroll();     } catch(e){ console.warn(e); } }
       if (pageId === 'availability'&& typeof renderAvailability=== 'function') { try { renderAvailability();} catch(e){ console.warn(e); } }
       if (pageId === 'swaps'       && typeof renderSwaps       === 'function') { try { renderSwaps();       } catch(e){ console.warn(e); } }
 
@@ -1634,6 +1667,185 @@
       sel.addEventListener('change', renderPayslip);
       renderPayslip();
     })();
+
+    /* ─── PAYROLL (team-wide summary) ───────────────────────────────────────
+       Per CLAUDE.md context: statutory employer uplift = 23%
+       (12% employer PRSI + 8% holiday accrual + 3% sick pay reserve).
+       Net to employee uses the same per-staff math as Payslip. */
+    const EMPLOYER_UPLIFT_PCT = 23;
+    function computeAllPayroll() {
+      return ACTIVE_STAFF.map(s => {
+        const p = computePayslip(s);
+        const employerUplift = p.gross * (EMPLOYER_UPLIFT_PCT / 100);
+        const totalEmployerCost = p.gross + employerUplift;
+        return { staff: s, p, employerUplift, totalEmployerCost };
+      });
+    }
+    function renderPayroll() {
+      try {
+        const wrap = document.getElementById('payroll-render');
+        if (!wrap) return;
+        const rows = computeAllPayroll();
+        const totals = rows.reduce((acc, r) => ({
+          hours: acc.hours + r.p.paidHours,
+          sundayHours: acc.sundayHours + r.p.sundayPaidHours,
+          gross: acc.gross + r.p.gross,
+          prsi: acc.prsi + r.p.prsi,
+          usc: acc.usc + r.p.usc,
+          net: acc.net + r.p.net,
+          employerUplift: acc.employerUplift + r.employerUplift,
+          employerCost: acc.employerCost + r.totalEmployerCost,
+        }), { hours:0, sundayHours:0, gross:0, prsi:0, usc:0, net:0, employerUplift:0, employerCost:0 });
+
+        const blendedRate = totals.hours > 0 ? totals.employerCost / totals.hours : 0;
+        const rateOk = blendedRate <= 16; // CLAUDE.md target ≤€16/h blended
+
+        wrap.innerHTML = `
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:14px;">
+            ${[
+              ['Total paid hrs', totals.hours.toFixed(1) + 'h',         '#5BA9B0'],
+              ['Total gross',    eur(totals.gross),                     '#8B7FBA'],
+              ['Total PRSI+USC', eur(totals.prsi + totals.usc),         '#D14B7F'],
+              ['Net to staff',   eur(totals.net),                       '#3FB984'],
+              ['Employer cost',  eur(totals.employerCost),              '#F59E0B'],
+              ['Blended rate',   `€${blendedRate.toFixed(2)}/h`,        rateOk ? '#3FB984' : '#E5524C'],
+            ].map(([label, value, color]) => `
+              <div class="card card-p payslip-card" style="border-left:3px solid ${color};">
+                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:800;">${label}</div>
+                <div style="font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-size:22px; font-weight:800; margin-top:4px; color:${color};">${value}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="card payslip-card" style="overflow:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+              <thead>
+                <tr style="background:var(--bg-elevated);">
+                  ${['Staff','Tier','Hrs','Sun hrs','Gross','PRSI','USC','Net','+23%','Empl. cost']
+                    .map((h, i) => `<th style="text-align:${i < 2 ? 'left' : 'right'}; padding:10px 14px; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted);">${h}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map(r => {
+                  const s = r.staff;
+                  const bg = s.mgr ? '#D14B7F' : colorFor(s.id);
+                  const t = tierPillColor(s.tier);
+                  return `<tr style="cursor:pointer; border-top:1px solid var(--border);" onclick="goto('payslip'); document.getElementById('payslip-staff').value='${s.id}'; renderPayslip();">
+                    <td style="padding:10px 14px;">
+                      <div style="display:flex; align-items:center; gap:10px;">
+                        <span class="avatar avatar-sm" style="background:${bg};">${s.init}</span>
+                        <div><div style="font-weight:700;">${s.name}</div><div style="font-size:10px; color:var(--text-muted);">${s.pos}</div></div>
+                      </div>
+                    </td>
+                    <td style="padding:10px 14px;"><span class="pill" style="background:${t.bg}; color:${t.fg};">${s.tier}</span></td>
+                    <td style="padding:10px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums;">${r.p.paidHours.toFixed(1)}</td>
+                    <td style="padding:10px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; color:${r.p.sundayPaidHours > 0 ? '#D14B7F' : 'var(--text-muted)'};">${r.p.sundayPaidHours > 0 ? r.p.sundayPaidHours.toFixed(1) : '—'}</td>
+                    <td style="padding:10px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums;">${eur(r.p.gross)}</td>
+                    <td style="padding:10px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; color:var(--text-muted);">${eur(r.p.prsi)}</td>
+                    <td style="padding:10px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; color:var(--text-muted);">${eur(r.p.usc)}</td>
+                    <td style="padding:10px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-weight:700; color:#3FB984;">${eur(r.p.net)}</td>
+                    <td style="padding:10px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; color:var(--text-muted);">${eur(r.employerUplift)}</td>
+                    <td style="padding:10px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-weight:700; color:#F59E0B;">${eur(r.totalEmployerCost)}</td>
+                  </tr>`;
+                }).join('')}
+                <tr style="border-top:2px solid var(--border-strong); background:var(--bg-elevated);">
+                  <td colspan="2" style="padding:12px 14px; font-weight:800;">TOTAL · ${rows.length} active staff</td>
+                  <td style="padding:12px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-weight:800;">${totals.hours.toFixed(1)}</td>
+                  <td style="padding:12px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-weight:800; color:#D14B7F;">${totals.sundayHours.toFixed(1)}</td>
+                  <td style="padding:12px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-weight:800;">${eur(totals.gross)}</td>
+                  <td style="padding:12px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-weight:800;">${eur(totals.prsi)}</td>
+                  <td style="padding:12px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-weight:800;">${eur(totals.usc)}</td>
+                  <td style="padding:12px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-weight:800; color:#3FB984;">${eur(totals.net)}</td>
+                  <td style="padding:12px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-weight:800;">${eur(totals.employerUplift)}</td>
+                  <td style="padding:12px 14px; text-align:right; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-weight:800; color:#F59E0B;">${eur(totals.employerCost)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;">
+            <div class="card card-p payslip-card">
+              <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:8px;">Employer uplift breakdown (23%)</div>
+              <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px;">
+                <span>Employer PRSI (12%)</span>
+                <span style="font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums;">${eur(totals.gross * 0.12)}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px;">
+                <span>Holiday accrual (8%)</span>
+                <span style="font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums;">${eur(totals.gross * 0.08)}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:13px;">
+                <span>Sick pay reserve (3%)</span>
+                <span style="font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums;">${eur(totals.gross * 0.03)}</span>
+              </div>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:8px; line-height:1.4;">
+                Per CLAUDE.md operating context. Holiday + sick accruals are reserves, not paid weekly.
+              </div>
+            </div>
+            <div class="card card-p payslip-card" style="background:linear-gradient(135deg, rgba(245,158,11,0.08), transparent);">
+              <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:800;">Total employer cost this week</div>
+              <div style="font-family:'Poppins',sans-serif; font-variant-numeric:tabular-nums; font-size:32px; font-weight:900; margin-top:4px; color:#F59E0B;">${eur(totals.employerCost)}</div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                Gross ${eur(totals.gross)} + uplift ${eur(totals.employerUplift)}
+              </div>
+              <div style="font-size:11px; margin-top:6px; color:${rateOk ? '#3FB984' : '#E5524C'};">
+                ${rateOk
+                  ? `✓ Blended rate €${blendedRate.toFixed(2)}/h — within €16/h target`
+                  : `⚠ Blended rate €${blendedRate.toFixed(2)}/h — exceeds €16/h target`}
+              </div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:8px;">
+                Weekly budget €5,500 · ${totals.employerCost <= 5500 ? '<span style="color:#3FB984;">✓ under budget</span>' : `<span style="color:#E5524C;">⚠ over by ${eur(totals.employerCost - 5500)}</span>`}
+              </div>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        console.error('renderPayroll failed:', err);
+        const wrap = document.getElementById('payroll-render');
+        if (wrap) wrap.innerHTML = '<div class="card card-p" style="color:var(--danger);">Could not compute payroll — check console.</div>';
+      }
+    }
+    function downloadPayrollCsv() {
+      try {
+        const rows = computeAllPayroll();
+        const lines = [
+          ['Staff','Tier','Position','Paid hours','Sunday hours','Hourly rate','Gross','PRSI','USC','Net','Employer uplift (23%)','Total employer cost'],
+          ...rows.map(r => [
+            r.staff.name, r.staff.tier, r.staff.pos,
+            r.p.paidHours.toFixed(2), r.p.sundayPaidHours.toFixed(2), r.staff.hourly_rate.toFixed(2),
+            r.p.gross.toFixed(2), r.p.prsi.toFixed(2), r.p.usc.toFixed(2), r.p.net.toFixed(2),
+            r.employerUplift.toFixed(2), r.totalEmployerCost.toFixed(2),
+          ]),
+        ];
+        // Totals row
+        const tot = rows.reduce((acc, r) => ({
+          hrs: acc.hrs + r.p.paidHours, sun: acc.sun + r.p.sundayPaidHours,
+          gross: acc.gross + r.p.gross, prsi: acc.prsi + r.p.prsi, usc: acc.usc + r.p.usc,
+          net: acc.net + r.p.net, upl: acc.upl + r.employerUplift, cost: acc.cost + r.totalEmployerCost,
+        }), { hrs:0, sun:0, gross:0, prsi:0, usc:0, net:0, upl:0, cost:0 });
+        lines.push([
+          'TOTAL', '', `${rows.length} staff`,
+          tot.hrs.toFixed(2), tot.sun.toFixed(2), '',
+          tot.gross.toFixed(2), tot.prsi.toFixed(2), tot.usc.toFixed(2), tot.net.toFixed(2),
+          tot.upl.toFixed(2), tot.cost.toFixed(2),
+        ]);
+        const csv = lines.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `payroll_week_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+        toast('Payroll CSV downloaded');
+      } catch (err) {
+        console.error('downloadPayrollCsv failed:', err);
+        toast('Export failed');
+      }
+    }
+    function printPayroll() { printCurrentPage('payroll', 'Weekly Payroll'); }
+    window.downloadPayrollCsv = downloadPayrollCsv;
+    window.printPayroll = printPayroll;
+    window.renderPayroll = renderPayroll;
 
     /* ─── AVAILABILITY ──────────────────────────────────────────────────────
        12 active staff × 7 days. Each cell cycles through 4 states. Persisted
