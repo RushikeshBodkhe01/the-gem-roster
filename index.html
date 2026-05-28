@@ -1068,6 +1068,24 @@
       });
     })();
 
+    // Irish Organisation of Working Time Act — standard cap is 40h/week.
+    // Auto-generator enforces this regardless of an individual's weekly_hours_ceiling.
+    const IE_MAX_WEEKLY_HOURS = 40;
+
+    // Experience tiers derived from start_date — shown alongside T1/T2/T3 so Jack
+    // can see at a glance who's a veteran vs. a new starter.
+    const EXPERIENCE_LEVELS = [
+      { min:5, label:'Veteran',     icon:'🏆', color:'#D14B7F' }, // 5+ years
+      { min:2, label:'Experienced', icon:'⭐', color:'#3FB984' }, // 2-5 years
+      { min:1, label:'Established', icon:'✨', color:'#5BA9B0' }, // 1-2 years
+      { min:0, label:'New starter', icon:'🌱', color:'#E69539' }, // <1 year
+    ];
+    function experienceFor(staff) {
+      if (!staff.start_date) return EXPERIENCE_LEVELS[3];
+      const yrs = (new Date() - new Date(staff.start_date)) / (365.25 * 86400000);
+      return EXPERIENCE_LEVELS.find(lvl => yrs >= lvl.min) || EXPERIENCE_LEVELS[3];
+    }
+
     // 3-zone palette by shift start: morning amber, afternoon teal, evening indigo.
     // Picked so the grid scans at a glance — Jack can see "morning row" vs "evening row" instantly.
     const SHIFT_ZONES = {
@@ -1193,7 +1211,10 @@
           // Respect can_close: evening + fullday end after 17:00.
           if ((slot === 'evening' || slot === 'fullday') && !s.can_close) return false;
           // Hours + shifts caps.
-          if (stateBy[s.id].scheduled + SLOTS[slot].hours > stateBy[s.id].target + 4) return false;
+          // Hard cap: never exceed Ireland's 40h/week, even if personal ceiling is higher.
+          const personalSoftCap = stateBy[s.id].target + 4;
+          const hardCap = Math.min(personalSoftCap, IE_MAX_WEEKLY_HOURS);
+          if (stateBy[s.id].scheduled + SLOTS[slot].hours > hardCap) return false;
           if (stateBy[s.id].shiftCount + 1 > stateBy[s.id].maxShifts) return false;
           return true;
         }
@@ -1356,14 +1377,17 @@
         if (!staff) { wrap.innerHTML = '<div class="card card-p">No active staff to show.</div>'; return; }
         const p = computePayslip(staff);
         const bg = staff.mgr ? '#D14B7F' : colorFor(staff.id);
+        const overCap = p.grossHours > IE_MAX_WEEKLY_HOURS;
+        const xp = experienceFor(staff);
         wrap.innerHTML = `
           <div class="card card-p payslip-card" style="margin-bottom:14px;">
             <div style="display:flex; align-items:center; gap:14px;">
               <span class="avatar avatar-lg" style="background:${bg}; width:48px; height:48px; font-size:18px;">${staff.init}</span>
               <div style="flex:1;">
                 <div style="font-family:'Poppins',sans-serif; font-weight:900; font-size:18px;">${staff.name}</div>
-                <div style="font-size:12px; color:var(--text-muted);">${staff.pos} · ${staff.tier} · ${eur(staff.hourly_rate)}/hr · Sunday premium 33%</div>
+                <div style="font-size:12px; color:var(--text-muted);">${staff.pos} · ${staff.tier} · <span style="color:${xp.color}; font-weight:700;">${xp.icon} ${xp.label}</span> · ${eur(staff.hourly_rate)}/hr · Sunday premium 33%</div>
               </div>
+              ${overCap ? `<span style="padding:6px 12px; border-radius:8px; background:${tint('#E5524C',0.18)}; color:#E5524C; font-size:11px; font-weight:800;">⚠ ${p.grossHours.toFixed(1)}h > ${IE_MAX_WEEKLY_HOURS}h IE cap</span>` : ''}
             </div>
           </div>
 
@@ -1792,6 +1816,9 @@
     }
     function capChips(s) {
       const chips = [];
+      // Lead with experience level so Jack sees seniority at a glance.
+      const xp = experienceFor(s);
+      chips.push([`${xp.icon} ${xp.label}`, xp.color]);
       if (s.can_open)            chips.push(['🔑 Open',  '#E69539']);
       if (s.can_close)           chips.push(['🌙 Close', '#5BA9B0']);
       if (s.can_deli)            chips.push(['🥪 Deli',  '#A07FB5']);
@@ -1874,9 +1901,10 @@
 
           ${sectionHeading('Employment')}
           ${detailRow('📅', 'Start date',     s.start_date ? `${fmtDate(s.start_date)} <span style="color:var(--text-muted); font-weight:400; margin-left:6px;">(${yearsSince(s.start_date)})</span>` : null)}
-          ${detailRow('📋', 'Tier',           s.tier + (s.tier === 'T3' ? ' — Anchor' : s.tier === 'T2' ? ' — Flex' : ' — Developing'))}
+          ${(() => { const xp = experienceFor(s); return detailRow('🎓', 'Experience', `<span style="color:${xp.color}; font-weight:800;">${xp.icon} ${xp.label}</span>`); })()}
+          ${detailRow('📋', 'Tier',           s.tier + (s.tier === 'T3' ? ' — Anchor (senior)' : s.tier === 'T2' ? ' — Flex (mid)' : ' — Developing (junior)'))}
           ${detailRow('💰', 'Hourly rate',    `€${Number(s.hourly_rate).toFixed(2)} <span style="color:var(--text-muted); font-weight:400; margin-left:6px;">· Sunday +33%</span>`)}
-          ${detailRow('⏱️', 'Weekly target',  `${s.weekly_hours_ceiling}h ceiling · max ${s.max_shifts_per_week} shifts`)}
+          ${detailRow('⏱️', 'Weekly target',  `${s.weekly_hours_ceiling}h ceiling · max ${s.max_shifts_per_week} shifts <span style="color:var(--text-muted); font-weight:400; margin-left:6px;">· capped at ${IE_MAX_WEEKLY_HOURS}h (IE law)</span>`)}
           ${detailRow('🏦', 'Bank',           s.bank_name ? `${s.bank_name} · <span style="font-family:ui-monospace,monospace;">●●●●●● ${s.bank_last4}</span>` : null)}
 
           ${sectionHeading('Emergency contact')}
@@ -1884,6 +1912,7 @@
           ${detailRow('📞', 'Phone',          s.emergency_phone)}
 
           ${sectionHeading('Compliance')}
+          ${detailRow('⚖️', 'Working Time Act', `Hard cap <strong style="color:var(--text-primary);">${IE_MAX_WEEKLY_HOURS}h/week</strong> · 11h rest between shifts`)}
           ${detailRow('🪪', 'Right to work',  s.rtw_type ? `${s.rtw_type}${s.rtw_expiry ? ` · expires <span style="color:var(--danger); font-weight:800;">${fmtDate(s.rtw_expiry)}</span>` : ''}` : '<span style="color:var(--text-muted);">EU passport · no expiry</span>')}
           ${detailRow('👥', 'Paired only',    s.paired_only ? 'Yes — never solo on floor' : 'No')}
           ${detailRow('📌', 'Fixed days',     s.fixed_days && s.fixed_days.length ? s.fixed_days.join(', ') : '<span style="color:var(--text-muted);">None</span>')}
