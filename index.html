@@ -1177,10 +1177,37 @@
 
     /* ─── AUTO-GENERATE ROSTER ─── */
     const SLOTS = {
-      morning: { start:'06:30', end:'14:00', hours:7.5 },
-      fullday: { start:'08:00', end:'17:00', hours:9   },
-      evening: { start:'14:00', end:'21:00', hours:7   },
+      morning:   { start:'06:30', end:'14:00', hours:7.5 }, // opener
+      fullday:   { start:'08:00', end:'17:00', hours:9   }, // bridge / mid
+      afternoon: { start:'14:00', end:'21:00', hours:7   }, // closer
+      market:    { start:'11:00', end:'19:00', hours:8   }, // Hot Dog Box / market (Sat/Sun)
     };
+
+    // Real per-day floor coverage from observed Bizimply rotas:
+    //   weekday  = 2 morning + 1 fullday + 2 afternoon = 5 staff
+    //   Friday   = 3 morning + 1 fullday + 3 afternoon = 7 staff
+    //   weekend  = 3 morning + 1 fullday + 3 afternoon + 1 market = 8 staff
+    const DAY_NEEDS = [
+      { morning:2, fullday:1, afternoon:2 },             // Mon
+      { morning:2, fullday:1, afternoon:2 },             // Tue
+      { morning:2, fullday:1, afternoon:2 },             // Wed
+      { morning:2, fullday:1, afternoon:2 },             // Thu
+      { morning:3, fullday:1, afternoon:3 },             // Fri
+      { morning:3, fullday:1, afternoon:3, market:1 },   // Sat
+      { morning:3, fullday:1, afternoon:3, market:1 },   // Sun
+    ];
+
+    // Soft target days per week per staff (the algorithm tries to hit but won't
+    // force). Floor stays at MAX_WORKING_DAYS_PER_WEEK (=5) hard cap.
+    //   T3 / manager → 5 days   (full week)
+    //   T2           → 4 days   (mid-flex)
+    //   T1           → 3 days   (juniors, ramped up gradually)
+    function targetDaysFor(s) {
+      if (s.role === 'manager' || s.tier === 'T3') return 5;
+      if (s.tier === 'T2') return 4;
+      return 3;
+    }
+
     function autoGenerateRoster(btn) {
       const originalText = btn.textContent;
       btn.disabled = true;
@@ -1188,89 +1215,123 @@
       setTimeout(() => {
         const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-        // 1. Reset roster + compute per-staff state from new backend fields.
-        const stateBy = {};
+        // ─── Reset + state ─────────────────────────────────────────────────
+        const state = {};
         ROSTER_STAFF.forEach(s => {
-          stateBy[s.id] = {
-            target: s.weekly_hours_ceiling || 36,
-            // Hard cap: nobody ever exceeds MAX_WORKING_DAYS_PER_WEEK, even if their personal field is higher.
-            maxShifts: Math.min(s.max_shifts_per_week || 5, MAX_WORKING_DAYS_PER_WEEK),
-            scheduled: 0,
-            shiftCount: 0,
-          };
           rosterData[s.id] = {};
           for (let d = 0; d < 7; d++) rosterData[s.id][d] = null;
+          state[s.id] = {
+            target: targetDaysFor(s),
+            maxDays: Math.min(s.max_shifts_per_week || 5, MAX_WORKING_DAYS_PER_WEEK),
+            days: 0,
+            hours: 0,
+          };
         });
 
-        // 2. Target headcount per day: weekday 3, Fri 4, weekend 5.
-        const targetPerDay = [3, 3, 3, 3, 4, 5, 5];
-
-        // 3. Helper: can this staff work this day + slot?
-        function canWork(s, dayIdx, slot) {
-          // Respect fixed_days: if set, staff can ONLY work those days.
+        // ─── Capability + cap check ────────────────────────────────────────
+        function canDo(s, dayIdx, slot, options = {}) {
+          // Already booked today?
+          if (rosterData[s.id][dayIdx]) return false;
+          // Fixed days lock
           if (s.fixed_days.length > 0 && !s.fixed_days.includes(DAY_LABELS[dayIdx])) return false;
-          // Respect can_open: morning slot starts before 12:00.
+          // Capabilities
           if (slot === 'morning' && !s.can_open) return false;
-          // Respect can_close: evening + fullday end after 17:00.
-          if ((slot === 'evening' || slot === 'fullday') && !s.can_close) return false;
-          // Hours + shifts caps.
-          // Hard cap: never exceed Ireland's 40h/week, even if personal ceiling is higher.
-          const personalSoftCap = stateBy[s.id].target + 4;
-          const hardCap = Math.min(personalSoftCap, IE_MAX_WEEKLY_HOURS);
-          if (stateBy[s.id].scheduled + SLOTS[slot].hours > hardCap) return false;
-          if (stateBy[s.id].shiftCount + 1 > stateBy[s.id].maxShifts) return false;
+          if ((slot === 'afternoon' || slot === 'fullday') && !s.can_close) return false;
+          if (slot === 'market' && !s.can_market) return false;
+          // Hard caps (5 days, 40h)
+          if (state[s.id].days + 1 > state[s.id].maxDays) return false;
+          if (state[s.id].hours + SLOTS[slot].hours > IE_MAX_WEEKLY_HOURS) return false;
+          // Soft target — respect unless we explicitly relax (catch-pass)
+          if (!options.relaxTarget && state[s.id].days >= state[s.id].target) return false;
           return true;
         }
         function place(s, dayIdx, slot) {
           rosterData[s.id][dayIdx] = { start: SLOTS[slot].start, end: SLOTS[slot].end };
-          stateBy[s.id].scheduled += SLOTS[slot].hours;
-          stateBy[s.id].shiftCount += 1;
+          state[s.id].days += 1;
+          state[s.id].hours += SLOTS[slot].hours;
+        }
+        function placedOnDay(dayIdx) {
+          return ROSTER_STAFF.filter(s => rosterData[s.id][dayIdx]);
+        }
+        function seniorOverlapping(dayIdx, slot) {
+          // Is there a non-T1 staff whose shift overlaps with this slot's hours?
+          const slotStart = parseInt(SLOTS[slot].start.slice(0,2),10) * 60 + parseInt(SLOTS[slot].start.slice(3),10);
+          const slotEnd   = parseInt(SLOTS[slot].end.slice(0,2),10)   * 60 + parseInt(SLOTS[slot].end.slice(3),10);
+          return placedOnDay(dayIdx).some(other => {
+            if (other.tier === 'T1') return false;
+            const sh = rosterData[other.id][dayIdx];
+            const oStart = parseInt(sh.start.slice(0,2),10)*60 + parseInt(sh.start.slice(3),10);
+            const oEnd   = parseInt(sh.end.slice(0,2),10)*60   + parseInt(sh.end.slice(3),10);
+            return oStart < slotEnd && oEnd > slotStart;
+          });
         }
 
-        // 4. Fill each day. Order: managers/T3 first (anchors), then T2, then T1.
+        // Tier ordering: T3 → T2 → T1. Within tier, managers first.
         const tierRank = { T3: 3, T2: 2, T1: 1 };
-        const ordered = [...ROSTER_STAFF].sort((a, b) => (tierRank[b.tier] - tierRank[a.tier]) || ((b.mgr ? 1 : 0) - (a.mgr ? 1 : 0)));
+        const senior2junior = (a, b) =>
+          (tierRank[b.tier] - tierRank[a.tier]) ||
+          ((b.role === 'manager' ? 1 : 0) - (a.role === 'manager' ? 1 : 0));
 
-        for (let d = 0; d < 7; d++) {
-          let filled = 0;
-          const need = targetPerDay[d];
-          const placedToday = []; // staff ids on this day's roster so far
-          const placedSeniorToday = () => placedToday.some(id => ROSTER_STAFF.find(x => x.id === id)?.tier !== 'T1');
+        // ─── STEP 1: Anchor days ───────────────────────────────────────────
+        // Joan Wed → fullday (she closes). Helena Fri → morning (she doesn't close).
+        ROSTER_STAFF.forEach(s => {
+          if (!s.anchor_day) return;
+          const dayIdx = DAY_LABELS.indexOf(s.anchor_day);
+          if (dayIdx < 0) return;
+          const anchorSlot = s.can_close ? 'fullday' : 'morning';
+          if (canDo(s, dayIdx, anchorSlot)) place(s, dayIdx, anchorSlot);
+        });
 
-          // Pass 1: openers + anchor day coverage.
-          // T1s have can_open=true (real rotas confirm) but are heavily deprioritised:
-          // auto-gen never places them in mornings — they land in afternoons by default.
-          // Manager can still manually drop a T1 into a morning via the cell edit modal.
-          for (const s of ordered) {
-            if (filled >= need) break;
-            if (rosterData[s.id][d]) continue;
-            if (s.tier === 'T1') continue;
-            // Anchor day staff get their anchor day if it matches.
-            // Morning-anchored (can_close=false, e.g. Helena) get 'morning';
-            // others get 'fullday'. Matches real Bizimply rotas.
-            if (s.anchor_day && s.anchor_day === DAY_LABELS[d]) {
-              const anchorSlot = s.can_close ? 'fullday' : 'morning';
-              if (canWork(s, d, anchorSlot)) {
-                place(s, d, anchorSlot); placedToday.push(s.id); filled++; continue;
-              }
-            }
-            if (canWork(s, d, 'morning')) {
-              place(s, d, 'morning'); placedToday.push(s.id); filled++;
-            }
+        // ─── STEP 2: Market specialists Sat + Sun ──────────────────────────
+        // Prefer Rafael (HDB specialist), then Jonny, then Jonas as backup.
+        [5, 6].forEach(dayIdx => {
+          if (!DAY_NEEDS[dayIdx].market) return;
+          const preferred = ['s7', 's12', 's2'];
+          for (const id of preferred) {
+            const s = ROSTER_STAFF.find(x => x.id === id);
+            if (s && canDo(s, dayIdx, 'market')) { place(s, dayIdx, 'market'); break; }
           }
-          // Pass 2: afternoon/evening (T1 paired_only only AFTER a senior is on the floor)
-          for (const s of ordered) {
-            if (filled >= need) break;
-            if (rosterData[s.id][d]) continue;
-            if (s.paired_only && !placedSeniorToday()) continue;
-            const slot = (d >= 5 && filled < need - 1) ? 'fullday' : 'evening';
-            if (canWork(s, d, slot)) {
-              place(s, d, slot); placedToday.push(s.id); filled++;
-            }
+        });
+
+        // ─── STEP 3: Fill day-by-day, slot-by-slot ─────────────────────────
+        // Order: morning → fullday → afternoon (market already handled above).
+        function fillSlots(relaxTarget) {
+          for (let d = 0; d < 7; d++) {
+            const need = DAY_NEEDS[d];
+            ['morning', 'fullday', 'afternoon'].forEach(slot => {
+              const want = need[slot] || 0;
+              // Count what's already placed in this slot today
+              const already = placedOnDay(d).filter(s => {
+                const sh = rosterData[s.id][d];
+                return sh && sh.start === SLOTS[slot].start && sh.end === SLOTS[slot].end;
+              }).length;
+              let placed = already;
+
+              // Candidates ranked by seniority; for morning, deprioritise T1.
+              const candidates = [...ROSTER_STAFF].sort((a, b) => {
+                if (slot === 'morning') {
+                  if (a.tier === 'T1' && b.tier !== 'T1') return 1;
+                  if (b.tier === 'T1' && a.tier !== 'T1') return -1;
+                }
+                return senior2junior(a, b);
+              });
+
+              for (const s of candidates) {
+                if (placed >= want) break;
+                // T1 paired-only must have a senior on the floor at the same time
+                if (s.paired_only && !seniorOverlapping(d, slot)) continue;
+                if (canDo(s, d, slot, { relaxTarget })) {
+                  place(s, d, slot);
+                  placed++;
+                }
+              }
+            });
           }
         }
+        fillSlots(false);                              // honour soft targets first
+        fillSlots(true);                               // catch pass — relax soft target, still under hard caps
 
-        // 5. Re-render the whole grid via the shared paint function.
+        // ─── Re-render ─────────────────────────────────────────────────────
         paintRosterGrid(document.getElementById('roster-grid-wrap'));
         saveRoster();
 
