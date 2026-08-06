@@ -480,20 +480,12 @@
             </div>
             <div id="rtw-list">
               <div class="rtw-row urgent">
-                <span class="avatar avatar-md" style="background:#3F7BAF;">RV</span>
+                <span class="avatar avatar-sm" style="background:#3F7BAF;">E</span>
                 <div class="rtw-text">
                   <div class="rtw-name">Staff E</div>
                   <div class="rtw-meta">Stamp 2 (Student) · expires 2026-05-28</div>
                 </div>
-                <span class="rtw-badge urgent">9 days</span>
-              </div>
-              <div class="rtw-row warning">
-                <span class="avatar avatar-md" style="background:#9B5774;">LS</span>
-                <div class="rtw-text">
-                  <div class="rtw-name">Staff M</div>
-                  <div class="rtw-meta">Working Holiday Authorisation · expires 2026-06-10</div>
-                </div>
-                <span class="rtw-badge warning">22 days</span>
+                <span class="rtw-badge urgent">1 day</span>
               </div>
             </div>
           </section>
@@ -1023,10 +1015,8 @@
       let h = 5381; for (let i = 0; i < seed.length; i++) { h = ((h << 5) + h) + seed.charCodeAt(i); h |= 0; }
       return PALETTE[Math.abs(h) % PALETTE.length];
     }
-    // Anonymised staff for trial demo. Each row is "Staff A" through "Staff N".
+    // Anonymised 6-person team for trial demo — Staff A through Staff F.
     // mgr is kept as a derived convenience flag (s.role === 'manager').
-    // Inactive staff (M, N) are preserved in the array so historical data
-    // renders; they're filtered out of active-staff lists.
     function staffRow(o) {
       return Object.assign({
         role: 'staff', tier: 'T1', contract_type: 'flexible',
@@ -1044,27 +1034,15 @@
       }, o, { mgr: (o.role === 'manager') });
     }
     const STAFF = [
-      staffRow({ id:'s1',  name:'Staff A', init:'A', role:'manager', pos:'Manager',           tier:'T3', weekly_hours_ceiling:39, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true                                                                       }),
-      staffRow({ id:'s2',  name:'Staff B', init:'B', role:'manager', pos:'Manager',           tier:'T3', weekly_hours_ceiling:39, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true,  can_market:true                                                       }),
-      staffRow({ id:'s3',  name:'Staff C', init:'C',                 pos:'Senior Staff',      tier:'T3',                                            can_open:true,  can_close:true,  can_deli:true,                  anchor_day:'Wed'                                       }),
+      staffRow({ id:'s1', name:'Staff A', init:'A', role:'manager', pos:'Manager',           tier:'T3', weekly_hours_ceiling:39, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true                                                                       }),
+      staffRow({ id:'s2', name:'Staff B', init:'B', role:'manager', pos:'Manager',           tier:'T3', weekly_hours_ceiling:39, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true,  can_market:true                                                       }),
+      staffRow({ id:'s3', name:'Staff C', init:'C',                 pos:'Senior Staff',      tier:'T3',                                            can_open:true,  can_close:true,  can_deli:true,                  anchor_day:'Wed'                                       }),
       // Staff D: mornings only — all shifts end by 15:00 (handover). Confirmed deli_manager + Fri anchor.
-      staffRow({ id:'s4',  name:'Staff D', init:'D',                 pos:'Senior Staff',      tier:'T3',                                            can_open:true,  can_close:false, can_deli:true,                  anchor_day:'Fri', special_role:'deli_manager'           }),
-      staffRow({ id:'s5',  name:'Staff E', init:'E',                 pos:'Staff',             tier:'T2',                                            can_open:true,  can_close:true,  can_deli:true,                                    rtw_type:'Stamp 2',   rtw_expiry:'2026-05-28' }),
-      staffRow({ id:'s6',  name:'Staff F', init:'F',                 pos:'Staff (Eves)',      tier:'T2',                                                            can_close:true,                                  max_shifts_per_week:5, fixed_days:['Thu','Fri','Sat','Sun'] }),
-      staffRow({ id:'s7',  name:'Staff G', init:'G',                 pos:'Market/Staff',      tier:'T2',                                                            can_close:true,                  can_market:true                                                        }),
-      // T1 staff — can_open: true per real rotas (juniors do morning shifts).
-      // Auto-generator still places T1 in afternoons by default via tier-sorted ordering.
-      staffRow({ id:'s8',  name:'Staff H', init:'H',                 pos:'Staff',             tier:'T1',                                            can_open:true,  can_close:true,                                  max_shifts_per_week:5, paired_only:true, rtw_type:'Stamp 1G', rtw_expiry:'2028-05-15' }),
-      staffRow({ id:'s9',  name:'Staff I', init:'I',                 pos:'Staff',             tier:'T1',                                            can_open:true,  can_close:true,                                  max_shifts_per_week:5, paired_only:true                              }),
-      // ─── Added per observed rota noticeboard ──────────────────────────────
-      staffRow({ id:'s10', name:'Staff J', init:'J',                 pos:'Staff',             tier:'T2',                                                            can_close:true                                                                                          }),
-      staffRow({ id:'s11', name:'Staff K', init:'K',                 pos:'Staff (New Starter)', tier:'T1',                                          can_open:true,  can_close:true,                                  max_shifts_per_week:5, paired_only:true                              }),
-      staffRow({ id:'s12', name:'Staff L', init:'L',                 pos:'Market Specialist',   tier:'T2',                                                          can_close:true,                  can_market:true                                                        }),
-      // ─── Deactivated (preserved for historical references; filtered from active lists) ─
-      staffRow({ id:'s13', name:'Staff M', init:'M',                 pos:'Part-Time',         tier:'T2',                                                                              can_deli:true,                                                                       is_active:false }),
-      staffRow({ id:'s14', name:'Staff N', init:'N',                 pos:'Staff',             tier:'T1',                                                            can_close:true,                                  max_shifts_per_week:5, paired_only:true,                                          is_active:false }),
+      staffRow({ id:'s4', name:'Staff D', init:'D',                 pos:'Senior Staff',      tier:'T3',                                            can_open:true,  can_close:false, can_deli:true,                  anchor_day:'Fri', special_role:'deli_manager'           }),
+      staffRow({ id:'s5', name:'Staff E', init:'E',                 pos:'Staff',             tier:'T2',                                            can_open:true,  can_close:true,  can_deli:true,                                    rtw_type:'Stamp 2',   rtw_expiry:'2026-05-28' }),
+      staffRow({ id:'s6', name:'Staff F', init:'F',                 pos:'Staff (Eves)',      tier:'T2',                                                            can_close:true,                                  max_shifts_per_week:5, fixed_days:['Thu','Fri','Sat','Sun'] }),
     ];
-    const STATUS = { 's1':'in','s2':'soon','s3':'off','s4':'in','s5':'off','s6':'soon','s7':'off','s8':'off','s9':'off','s10':'off','s11':'off','s12':'soon' };
+    const STATUS = { 's1':'in','s2':'soon','s3':'off','s4':'in','s5':'off','s6':'soon' };
 
     // Per-staff personal + employment details (anonymised). Realistic but fake —
     // no real PPSN or bank numbers. Used by the Staff Detail modal.
@@ -1075,14 +1053,6 @@
       s4:  { phone:'+353 87 555 0107', address:'Address line, Greater Dublin',    eircode:'D13 W004', dob:'1990-01-29', emergency_name:'Sibling of D',  emergency_phone:'+353 87 555 0108', emergency_relation:'Sibling', start_date:'2021-03-09', ppsn_last4:'7766C', bank_name:'AIB',     bank_last4:'3340', notes:'Deli manager. Mornings only — no closes. Fri anchor.' },
       s5:  { phone:'+353 85 555 0109', address:'Address line, Greater Dublin',    eircode:'D13 V552', dob:'2001-06-15', emergency_name:'Sibling of E',  emergency_phone:'+353 85 555 0110', emergency_relation:'Sibling', start_date:'2024-09-02', ppsn_last4:'8821B', bank_name:'Revolut', bank_last4:'2156', notes:'Stamp 2 student visa — 20h cap during term. Renews 2026-05-28 (urgent).' },
       s6:  { phone:'+353 87 555 0111', address:'Address line, Greater Dublin',    eircode:'D13 K820', dob:'1995-09-30', emergency_name:'Parent of F',   emergency_phone:'+353 87 555 0112', emergency_relation:'Parent',  start_date:'2023-06-12', ppsn_last4:'9090C', bank_name:'BOI',     bank_last4:'5544', notes:'Evening specialist. Locked Thu–Sun only — has another weekday job.' },
-      s7:  { phone:'+351 91 555 0113', address:'Address line, Greater Dublin',    eircode:'D13 R113', dob:'1993-04-18', emergency_name:'Family of G',   emergency_phone:'+351 91 555 0114', emergency_relation:'Cousin',  start_date:'2022-11-21', ppsn_last4:'1212B', bank_name:'Revolut', bank_last4:'8801', notes:'Hot Dog Box specialist Sat+Sun. Cannot open — alarm code not issued.' },
-      s8:  { phone:'+353 87 555 0115', address:'Address line, Greater Dublin',    eircode:'D13 T221', dob:'2001-08-12', emergency_name:'Parent of H',   emergency_phone:'+91 98 555 0116',  emergency_relation:'Parent',  start_date:'2025-01-08', ppsn_last4:'4455D', bank_name:'AIB',     bank_last4:'6677', notes:'Stamp 1G (MSc graduate). Paired-only floor presence. Renews 2028-05-15.' },
-      s9:  { phone:'+353 89 555 0117', address:'Address line, Greater Dublin',    eircode:'D13 P109', dob:'2003-12-03', emergency_name:'Parent of I',   emergency_phone:'+353 89 555 0118', emergency_relation:'Parent',  start_date:'2024-04-15', ppsn_last4:'6677E', bank_name:'Revolut', bank_last4:'3322', notes:'Paired-only. Evening / afternoon shifts only. Studying part-time.' },
-      s10: { phone:'+353 86 555 0119', address:'Address line, Greater Dublin',    eircode:'D13 H770', dob:'1998-02-25', emergency_name:'Parent of J',   emergency_phone:'+353 86 555 0120', emergency_relation:'Parent',  start_date:'2024-08-19', ppsn_last4:'7788F', bank_name:'BOI',     bank_last4:'1100', notes:'Flexible afternoon staff. Up for any non-opening slot.' },
-      s11: { phone:'+353 87 555 0121', address:'Address line, Greater Dublin',    eircode:'D13 M991', dob:'2005-05-18', emergency_name:'Parent of K',   emergency_phone:'+353 87 555 0122', emergency_relation:'Parent',  start_date:'2026-04-22', ppsn_last4:'8899G', bank_name:'AIB',     bank_last4:'4400', notes:'New starter (Apr 2026). Paired-only — still in initial 6-week pair window.' },
-      s12: { phone:'+353 89 555 0123', address:'Address line, Greater Dublin',    eircode:'D13 J554', dob:'1994-10-08', emergency_name:'Sibling of L',  emergency_phone:'+353 89 555 0124', emergency_relation:'Sibling', start_date:'2025-11-03', ppsn_last4:'9911H', bank_name:'Revolut', bank_last4:'5500', notes:'Hot Dog Box weekend specialist. 3rd HDB hand alongside G + B.' },
-      s13: { phone:'+353 85 555 0125', address:'Relocated outside Dublin',        eircode:null,       dob:'1995-07-14', emergency_name:'Parent of M',   emergency_phone:'+353 85 555 0126', emergency_relation:'Parent',  start_date:'2023-04-10', ppsn_last4:'2233A', bank_name:'Revolut', bank_last4:'9988', notes:'Left summer 2025 — relocated. Kept on file.' },
-      s14: { phone:'+353 86 555 0127', address:'Relocated outside Dublin',        eircode:null,       dob:'2003-09-21', emergency_name:'Sibling of N',  emergency_phone:'+353 86 555 0128', emergency_relation:'Sibling', start_date:'2024-01-29', ppsn_last4:'4455B', bank_name:'AIB',     bank_last4:'1144', notes:'Left Sep 2025 — relocated for college. Kept on file.' },
     };
     // Merge details into each STAFF row so callers can read s.phone, s.address, etc.
     STAFF.forEach(s => { const d = STAFF_DETAILS[s.id]; if (d) Object.assign(s, d); });
@@ -1113,7 +1083,7 @@
       const shifts = [
         { staff: STAFF[0], type:'AM',  time:'07:00–15:00', clocked:true,  color:'#2563EB', label:'🌅 AM' },
         { staff: STAFF[3], type:'DEL', time:'08:00–15:00', clocked:true,  color:'#7C3AED', label:'🥪 DELI' },
-        { staff: STAFF[6], type:'BC',  time:'09:00–18:00', clocked:false, color:'#BE185D', label:'🔄 BC' },
+        { staff: STAFF[2], type:'BC',  time:'09:00–18:00', clocked:false, color:'#BE185D', label:'🔄 BC' },
         { staff: STAFF[1], type:'PM',  time:'15:00–22:00', clocked:false, color:'#0F766E', label:'🌆 PM' },
       ];
       document.getElementById('todays-shifts').innerHTML = shifts.map(s => {
@@ -1381,18 +1351,18 @@
       market:    { start:'12:00', end:'20:00', hours:8   }, // Hot Dog Box / market (Sat/Sun)
     };
 
-    // Real per-day floor coverage from observed Bizimply rotas:
-    //   weekday  = 2 morning + 1 fullday + 2 afternoon = 5 staff
-    //   Friday   = 3 morning + 1 fullday + 3 afternoon = 7 staff
-    //   weekend  = 3 morning + 1 fullday + 3 afternoon + 1 market = 8 staff
+    // Right-sized per-day floor coverage for a 6-person team:
+    //   weekday  = 1 morning + 1 fullday + 1 afternoon = 3 staff
+    //   Friday   = 2 morning + 1 fullday + 1 afternoon = 4 staff
+    //   weekend  = 2 morning + 1 fullday + 2 afternoon = 5 staff
     const DAY_NEEDS = [
-      { morning:2, fullday:1, afternoon:2 },             // Mon
-      { morning:2, fullday:1, afternoon:2 },             // Tue
-      { morning:2, fullday:1, afternoon:2 },             // Wed
-      { morning:2, fullday:1, afternoon:2 },             // Thu
-      { morning:3, fullday:1, afternoon:3 },             // Fri
-      { morning:3, fullday:1, afternoon:3, market:1 },   // Sat
-      { morning:3, fullday:1, afternoon:3, market:1 },   // Sun
+      { morning:1, fullday:1, afternoon:1 },             // Mon
+      { morning:1, fullday:1, afternoon:1 },             // Tue
+      { morning:1, fullday:1, afternoon:1 },             // Wed
+      { morning:1, fullday:1, afternoon:1 },             // Thu
+      { morning:2, fullday:1, afternoon:1 },             // Fri
+      { morning:2, fullday:1, afternoon:2 },             // Sat
+      { morning:2, fullday:1, afternoon:2 },             // Sun
     ];
 
     // Soft target days per week per staff (the algorithm tries to hit but won't
@@ -1531,10 +1501,11 @@
         });
 
         // ─── STEP 2: Market specialists Sat + Sun ──────────────────────────
-        // Prefer Staff G (HDB specialist), then Staff L, then Staff B as backup.
+        // With the 6-person team, only Staff B has can_market. Kept as a slot
+        // rather than removed so a future can_market hire drops in cleanly.
         [5, 6].forEach(dayIdx => {
           if (!ADJUSTED_NEEDS[dayIdx].market) return;
-          const preferred = ['s7', 's12', 's2'];
+          const preferred = ['s2'];
           for (const id of preferred) {
             const s = ROSTER_STAFF.find(x => x.id === id);
             if (s && canDo(s, dayIdx, 'market')) { place(s, dayIdx, 'market'); break; }
@@ -2301,10 +2272,8 @@
         seed[s.id] = [0,0,0,0,0,0,0];
         // Drop in a few preferences so the grid isn't all-green
         if (s.id === 's6') { seed[s.id] = [3,3,3,2,2,2,2]; }   // Staff F Thu-Sun only
-        if (s.id === 's7') { seed[s.id] = [0,0,0,0,0,1,1]; }   // Staff G weekend market mornings
-        if (s.id === 's8') { seed[s.id] = [2,3,2,2,2,2,3]; }   // Staff H PM-leaning
-        if (s.id === 's11') { seed[s.id] = [0,2,3,2,2,2,2]; }  // Staff K evening filler
         if (s.id === 's4') { seed[s.id] = [1,1,1,1,1,1,3]; }   // Staff D mornings, Sun off
+        if (s.id === 's5') { seed[s.id] = [0,0,2,0,0,0,3]; }   // Staff E PM-leaning, Sun off
       });
       return seed;
     })();
@@ -2368,14 +2337,13 @@
     function defaultSwapsData() {
       return {
         marketplace: [
-          { id:'sw1', releaserId:'s6', day:'Sat', time:'15:00–22:00', reason:'Sister’s engagement party', status:'open', claimerId:null },
-          { id:'sw2', releaserId:'s8', day:'Wed', time:'16:00–20:00', reason:'College deadline',          status:'open', claimerId:null },
-          { id:'sw3', releaserId:'s5', day:'Thu', time:'07:00–15:00', reason:'Doctor appointment',         status:'open', claimerId:null },
-          { id:'sw4', releaserId:'s7', day:'Sun', time:'11:00–19:00 HDB', reason:'Family wedding',         status:'claimed', claimerId:'s12' },
+          { id:'sw1', releaserId:'s6', day:'Sat', time:'15:00–22:00', reason:'Family event',              status:'open',    claimerId:null },
+          { id:'sw3', releaserId:'s5', day:'Thu', time:'07:00–15:00', reason:'GP appointment',            status:'open',    claimerId:null },
+          { id:'sw4', releaserId:'s4', day:'Wed', time:'07:00–15:00', reason:'Dentist',                   status:'claimed', claimerId:'s3' },
         ],
         peer: [
-          { id:'pw1', fromId:'s9', fromShift:'Sun 15:00–22:00', toId:'s11', toShift:'Wed 16:00–21:00', status:'pending' },
-          { id:'pw2', fromId:'s10', fromShift:'Fri 15:00–22:00', toId:'s3', toShift:'Tue 07:00–15:00', status:'pending' },
+          { id:'pw1', fromId:'s5', fromShift:'Sun 15:00–22:00', toId:'s6', toShift:'Sat 15:00–22:00', status:'pending' },
+          { id:'pw2', fromId:'s3', fromShift:'Fri 15:00–22:00', toId:'s2', toShift:'Tue 07:00–15:00', status:'pending' },
         ],
       };
     }
@@ -2810,8 +2778,8 @@
     let leaveData = (function () {
       try { const s = localStorage.getItem('gem-leave-data'); if (s) return JSON.parse(s); } catch(e) {}
       return [
-        { id:'l1', staff:STAFF[4], type:'annual', dates:'2026-06-14 → 2026-06-21', reason:'Family wedding in Brazil', status:'pending' },
-        { id:'l2', staff:STAFF[6], type:'sick',   dates:'2026-05-19',              reason:'Doctor appt',              status:'pending' },
+        { id:'l1', staff:STAFF[4], type:'annual', dates:'2026-06-14 → 2026-06-21', reason:'Pre-booked family trip',   status:'pending' },
+        { id:'l2', staff:STAFF[5], type:'sick',   dates:'2026-06-02',              reason:'GP appointment',           status:'pending' },
       ];
     })();
     function renderLeave() {
