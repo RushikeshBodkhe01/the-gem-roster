@@ -508,7 +508,16 @@
               <p class="h-sub" id="leave-sub">2 pending requests</p>
             </div>
           </div>
-          <div id="leave-list"></div>
+
+          <section class="section">
+            <div class="section-h"><h2>Leave balance available <span class="muted-count">(hours remaining · out of 160h annual entitlement)</span></h2></div>
+            <div id="leave-balance-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px;"></div>
+          </section>
+
+          <section class="section">
+            <div class="section-h"><h2>Pending requests</h2></div>
+            <div id="leave-list"></div>
+          </section>
         </div>
 
         <!-- ─── AVAILABILITY ─── -->
@@ -867,6 +876,7 @@
       if (pageId === 'compliance'  && typeof renderComplianceCard === 'function') { try { renderComplianceCard(); } catch(e){ console.warn(e); } }
       if (pageId === 'availability'&& typeof renderAvailability=== 'function') { try { renderAvailability();} catch(e){ console.warn(e); } }
       if (pageId === 'swaps'       && typeof renderSwaps       === 'function') { try { renderSwaps();       } catch(e){ console.warn(e); } }
+      if (pageId === 'leave'       && typeof renderLeaveBalances=== 'function') { try { renderLeaveBalances();} catch(e){ console.warn(e); } }
 
       // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2782,6 +2792,49 @@
         { id:'l2', staff:STAFF[5], type:'sick',   dates:'2026-06-02',              reason:'GP appointment',           status:'pending' },
       ];
     })();
+    /* ─── LEAVE BALANCE (per-staff donut chart) ─────────────────────────────
+       Hours remaining in the current annual leave year. Max entitlement =
+       160h (Irish full-time standard: 4 weeks × 40h per OWTA 1997 §19). */
+    const LEAVE_HOURS = { s1:120, s2:106, s3:67, s4:15, s5:91, s6:45 };
+    const LEAVE_ENTITLEMENT = 160;
+    function renderLeaveBalances() {
+      const el = document.getElementById('leave-balance-grid');
+      if (!el) return;
+      const R = 42;                                // circle radius (fits in 100x100 viewBox)
+      const CIRC = 2 * Math.PI * R;                // circumference
+      el.innerHTML = ACTIVE_STAFF.map(s => {
+        const hrs = LEAVE_HOURS[s.id] ?? 0;
+        const pct = Math.max(0, Math.min(100, (hrs / LEAVE_ENTITLEMENT) * 100));
+        const color = pct >= 60 ? '#3FB984' : pct >= 30 ? '#E69539' : '#E5524C';
+        const label = pct >= 60 ? 'Healthy' : pct >= 30 ? 'Watch' : 'Low';
+        const offset = CIRC * (1 - pct / 100);
+        const bg = s.mgr ? '#D14B7F' : colorFor(s.id);
+        return `<div class="card card-p" style="text-align:center;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; justify-content:center;">
+            <span class="avatar avatar-sm" style="background:${bg};">${s.init}</span>
+            <div style="font-weight:800; font-size:13px;">${s.name}</div>
+          </div>
+          <div style="position:relative; width:110px; height:110px; margin:0 auto;">
+            <svg viewBox="0 0 100 100" width="110" height="110" style="transform:rotate(-90deg);">
+              <circle cx="50" cy="50" r="${R}" fill="none" stroke="var(--bg-elevated)" stroke-width="10"/>
+              <circle cx="50" cy="50" r="${R}" fill="none" stroke="${color}" stroke-width="10"
+                stroke-linecap="round" stroke-dasharray="${CIRC.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"
+                style="transition:stroke-dashoffset .8s ease-out;"/>
+            </svg>
+            <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+              <div style="font-family:'Poppins',sans-serif; font-weight:900; font-size:22px; color:${color}; line-height:1; font-variant-numeric:tabular-nums;">${hrs}</div>
+              <div style="font-size:9px; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-muted); font-weight:800; margin-top:2px;">hrs left</div>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <span style="display:inline-block; padding:3px 10px; border-radius:8px; background:${tint(color, 0.15)}; color:${color}; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1px;">${label} · ${Math.round(pct)}%</span>
+          </div>
+          <div style="font-size:10px; color:var(--text-muted); margin-top:6px;">Used ${LEAVE_ENTITLEMENT - hrs}h of ${LEAVE_ENTITLEMENT}h</div>
+        </div>`;
+      }).join('');
+    }
+    renderLeaveBalances();
+
     function renderLeave() {
       const pending = leaveData.filter(l => l.status === 'pending');
       document.getElementById('leave-sub').textContent = `${pending.length} pending request${pending.length === 1 ? '' : 's'}`;
