@@ -1025,7 +1025,7 @@
       let h = 5381; for (let i = 0; i < seed.length; i++) { h = ((h << 5) + h) + seed.charCodeAt(i); h |= 0; }
       return PALETTE[Math.abs(h) % PALETTE.length];
     }
-    // Anonymised 6-person team for trial demo — Staff A through Staff F.
+    // 6-person team for trial demo: Manager, Supervisor, Staff C–F.
     // mgr is kept as a derived convenience flag (s.role === 'manager').
     function staffRow(o) {
       return Object.assign({
@@ -1046,8 +1046,8 @@
     // weekly_hours_ceiling doubles as each staff's target hours per week.
     // Realistic mix — 2 full-time (40h), 2 mid (35h), 2 part-time (20h).
     const STAFF = [
-      staffRow({ id:'s1', name:'Staff A', init:'A', role:'manager', pos:'Manager',           tier:'T3', weekly_hours_ceiling:40, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true                                                                       }),
-      staffRow({ id:'s2', name:'Staff B', init:'B', role:'manager', pos:'Manager',           tier:'T3', weekly_hours_ceiling:35, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true,  can_market:true                                                       }),
+      staffRow({ id:'s1', name:'Manager',    init:'M', role:'manager', pos:'Store Manager',     tier:'T3', weekly_hours_ceiling:40, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true                                                                       }),
+      staffRow({ id:'s2', name:'Supervisor', init:'S', role:'manager', pos:'Assistant Manager', tier:'T3', weekly_hours_ceiling:35, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true,  can_market:true                                                       }),
       staffRow({ id:'s3', name:'Staff C', init:'C',                 pos:'Senior Staff',      tier:'T3', weekly_hours_ceiling:40,                    can_open:true,  can_close:true,  can_deli:true,                  anchor_day:'Wed'                                       }),
       // Staff D: mornings only — all shifts end by 15:00 (handover). Confirmed deli_manager + Fri anchor. Part-time (20h).
       staffRow({ id:'s4', name:'Staff D', init:'D',                 pos:'Senior Staff',      tier:'T3', weekly_hours_ceiling:20,                    can_open:true,  can_close:false, can_deli:true,                  anchor_day:'Fri', special_role:'deli_manager'           }),
@@ -1257,13 +1257,12 @@
       return EXPERIENCE_LEVELS.find(lvl => yrs >= lvl.min) || EXPERIENCE_LEVELS[3];
     }
 
-    // 3-zone palette by shift start. Muted editorial tones — slate / sage / dusty
-    // violet — so the roster grid reads as a calm business schedule, not a candy
-    // dashboard. Colours still distinguishable but low-saturation.
+    // 3-zone palette — enterprise saturated tones (Salesforce / Workday register)
+    // with WHITE chip text for maximum contrast on the dark theme.
     const SHIFT_ZONES = {
-      morning:   { color: '#6B8CAE', icon: '🌅', label: 'Morning' },   // muted slate blue (dawn)
-      afternoon: { color: '#7A8B6B', icon: '🌞', label: 'Afternoon' }, // muted sage    (midday)
-      evening:   { color: '#7A6B8C', icon: '🌙', label: 'Evening' },   // dusty violet  (dusk)
+      morning:   { color: '#2563EB', icon: '🌅', label: 'Morning' },   // royal blue
+      afternoon: { color: '#059669', icon: '🌞', label: 'Afternoon' }, // emerald
+      evening:   { color: '#7C3AED', icon: '🌙', label: 'Evening' },   // violet
     };
     function zoneFor(shift) {
       if (!shift) return null;
@@ -1282,12 +1281,13 @@
         return `<span class="rchip rchip-off" style="font-size:13px; font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; padding:4px 10px;">Off</span>`;
       }
       const z = zoneFor(shift);
-      return `<span style="font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-size:13px; font-weight:800; color:${z.color}; background:${tint(z.color, 0.20)}; border:1px solid ${tint(z.color, 0.40)}; padding:4px 10px; border-radius:8px;" title="${z.label} shift">${shift.start}–${shift.end}</span>`;
+      // Enterprise chip: solid dark-tinted bg, white text, subtle border. High contrast on dark theme.
+      return `<span style="font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums; font-size:13px; font-weight:800; color:#FFFFFF; background:${tint(z.color, 0.55)}; border:1px solid ${tint(z.color, 0.75)}; padding:4px 10px; border-radius:6px; box-shadow:0 1px 0 rgba(0,0,0,0.25);" title="${z.label} shift">${shift.start}–${shift.end}</span>`;
     }
     function cellBgForShift(shift) {
       const z = zoneFor(shift);
       if (!z) return 'var(--bg-surface)';
-      return tint(z.color, 0.10);
+      return tint(z.color, 0.18); // deeper cell wash so the zone reads even at a distance
     }
 
     // Shared grid renderer used by initial load AND the auto-generate rerender.
@@ -1305,9 +1305,9 @@
       html += `<div class="head" style="text-align:left; padding-left:12px;">Staff</div>`;
       ROSTER_DAYS.forEach((d, idx) => {
         const isWeekend = idx >= 5;
-        // Muted rose for weekend headers — signals busier day without shouting.
-        const headBg = isWeekend ? 'rgba(156,107,114,0.14)' : '';
-        const headFg = isWeekend ? '#9C6B72' : '';
+        // Amber accent for weekend headers — signals busier day with real contrast.
+        const headBg = isWeekend ? 'rgba(245,158,11,0.16)' : '';
+        const headFg = isWeekend ? '#FBBF24' : '';
         const w = weatherForDay(idx);
         const weatherChip = w
           ? `<div style="font-size:11px; font-weight:400; margin-top:2px; opacity:0.85;" title="${w.tempMax}° · ${w.precip.toFixed(1)}mm rain">${w.emoji} ${w.tempMax}°</div>`
@@ -1521,7 +1521,7 @@
         });
 
         // ─── STEP 2: Market specialists Sat + Sun ──────────────────────────
-        // With the 6-person team, only Staff B has can_market. Kept as a slot
+        // With the 6-person team, only Supervisor has can_market. Kept as a slot
         // rather than removed so a future can_market hire drops in cleanly.
         [5, 6].forEach(dayIdx => {
           if (!ADJUSTED_NEEDS[dayIdx].market) return;
@@ -2446,7 +2446,7 @@
     function claimSwap(id) {
       const sw = swapsData.marketplace.find(x => x.id === id);
       if (!sw) return;
-      // Demo: current signed-in user is Staff A (s1). Claims attribute to them.
+      // Demo: current signed-in user is Manager (s1). Claims attribute to them.
       sw.status = 'claimed';
       sw.claimerId = 's1';
       saveSwaps();
