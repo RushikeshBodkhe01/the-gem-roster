@@ -369,7 +369,7 @@
         <div class="user-row">
           <span class="avatar avatar-md" style="background:var(--gem-pink);">AT</span>
           <div style="flex:1; min-width:0;">
-            <div class="user-name">Staff A</div>
+            <div class="user-name">Marc</div>
             <div class="user-role">manager</div>
           </div>
         </div>
@@ -386,7 +386,7 @@
 
           <div class="header">
             <div>
-              <h1 class="h-greeting" id="greeting">Good evening, A</h1>
+              <h1 class="h-greeting" id="greeting">Good evening, Marc</h1>
               <p class="h-date" id="date-line">Tuesday, 19 May</p>
             </div>
             <div class="hero-actions">
@@ -919,7 +919,7 @@
       const now = new Date();
       const h = now.getHours();
       const greeting = h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening';
-      document.getElementById('greeting').textContent = `Good ${greeting}, A`;
+      document.getElementById('greeting').textContent = `Good ${greeting}, Marc`;
       document.getElementById('date-line').textContent =
         new Intl.DateTimeFormat('en-IE', { weekday: 'long', day: 'numeric', month: 'long' }).format(now);
     })();
