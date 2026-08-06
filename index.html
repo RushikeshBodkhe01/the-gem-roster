@@ -1043,14 +1043,16 @@
         notes: null,
       }, o, { mgr: (o.role === 'manager') });
     }
+    // weekly_hours_ceiling doubles as each staff's target hours per week.
+    // Realistic mix — 2 full-time (40h), 2 mid (35h), 2 part-time (20h).
     const STAFF = [
-      staffRow({ id:'s1', name:'Staff A', init:'A', role:'manager', pos:'Manager',           tier:'T3', weekly_hours_ceiling:39, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true                                                                       }),
-      staffRow({ id:'s2', name:'Staff B', init:'B', role:'manager', pos:'Manager',           tier:'T3', weekly_hours_ceiling:39, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true,  can_market:true                                                       }),
-      staffRow({ id:'s3', name:'Staff C', init:'C',                 pos:'Senior Staff',      tier:'T3',                                            can_open:true,  can_close:true,  can_deli:true,                  anchor_day:'Wed'                                       }),
-      // Staff D: mornings only — all shifts end by 15:00 (handover). Confirmed deli_manager + Fri anchor.
-      staffRow({ id:'s4', name:'Staff D', init:'D',                 pos:'Senior Staff',      tier:'T3',                                            can_open:true,  can_close:false, can_deli:true,                  anchor_day:'Fri', special_role:'deli_manager'           }),
-      staffRow({ id:'s5', name:'Staff E', init:'E',                 pos:'Staff',             tier:'T2',                                            can_open:true,  can_close:true,  can_deli:true,                                    rtw_type:'Stamp 2',   rtw_expiry:'2026-05-28' }),
-      staffRow({ id:'s6', name:'Staff F', init:'F',                 pos:'Staff (Eves)',      tier:'T2',                                                            can_close:true,                                  max_shifts_per_week:5, fixed_days:['Thu','Fri','Sat','Sun'] }),
+      staffRow({ id:'s1', name:'Staff A', init:'A', role:'manager', pos:'Manager',           tier:'T3', weekly_hours_ceiling:40, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true                                                                       }),
+      staffRow({ id:'s2', name:'Staff B', init:'B', role:'manager', pos:'Manager',           tier:'T3', weekly_hours_ceiling:35, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true,  can_market:true                                                       }),
+      staffRow({ id:'s3', name:'Staff C', init:'C',                 pos:'Senior Staff',      tier:'T3', weekly_hours_ceiling:40,                    can_open:true,  can_close:true,  can_deli:true,                  anchor_day:'Wed'                                       }),
+      // Staff D: mornings only — all shifts end by 15:00 (handover). Confirmed deli_manager + Fri anchor. Part-time (20h).
+      staffRow({ id:'s4', name:'Staff D', init:'D',                 pos:'Senior Staff',      tier:'T3', weekly_hours_ceiling:20,                    can_open:true,  can_close:false, can_deli:true,                  anchor_day:'Fri', special_role:'deli_manager'           }),
+      staffRow({ id:'s5', name:'Staff E', init:'E',                 pos:'Staff',             tier:'T2', weekly_hours_ceiling:35,                    can_open:true,  can_close:true,  can_deli:true,                                    rtw_type:'Stamp 2',   rtw_expiry:'2026-05-28' }),
+      staffRow({ id:'s6', name:'Staff F', init:'F',                 pos:'Staff (Eves)',      tier:'T2', weekly_hours_ceiling:20,                                   can_close:true,                                  max_shifts_per_week:5, fixed_days:['Thu','Fri','Sat','Sun'] }),
     ];
     const STATUS = { 's1':'in','s2':'soon','s3':'off','s4':'in','s5':'off','s6':'soon' };
 
@@ -1434,6 +1436,8 @@
           for (let d = 0; d < 7; d++) rosterData[s.id][d] = null;
           state[s.id] = {
             target: targetDaysFor(s),
+            // Per-staff soft cap on hours — drives 20h/35h/40h variety in the roster.
+            targetHours: s.weekly_hours_ceiling || 36,
             maxDays: Math.min(s.max_shifts_per_week || 5, MAX_WORKING_DAYS_PER_WEEK),
             days: 0,
             hours: 0,
@@ -1469,8 +1473,12 @@
             const cap = termTime ? IRISH_LAWS.stamp2_term_cap_hours : IRISH_LAWS.stamp2_holiday_cap_hours;
             if (state[s.id].hours + SLOTS[slot].hours > cap) return false;
           }
-          // Soft target — respect unless we explicitly relax (catch-pass)
-          if (!options.relaxTarget && state[s.id].days >= state[s.id].target) return false;
+          // Soft targets — respect unless we explicitly relax (catch-pass).
+          // Hours target gives the 20/35/40 variety; days target keeps everyone off 7-day weeks.
+          if (!options.relaxTarget) {
+            if (state[s.id].hours + SLOTS[slot].hours > state[s.id].targetHours) return false;
+            if (state[s.id].days >= state[s.id].target) return false;
+          }
           return true;
         }
         function place(s, dayIdx, slot) {
