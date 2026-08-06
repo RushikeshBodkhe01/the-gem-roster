@@ -1257,12 +1257,13 @@
       return EXPERIENCE_LEVELS.find(lvl => yrs >= lvl.min) || EXPERIENCE_LEVELS[3];
     }
 
-    // 3-zone palette by shift start: morning amber, afternoon teal, evening indigo.
-    // Picked so the grid scans at a glance — Jack can see "morning row" vs "evening row" instantly.
+    // 3-zone palette by shift start. Muted editorial tones — slate / sage / dusty
+    // violet — so the roster grid reads as a calm business schedule, not a candy
+    // dashboard. Colours still distinguishable but low-saturation.
     const SHIFT_ZONES = {
-      morning:   { color: '#F59E0B', icon: '🌅', label: 'Morning' },   // start < 12:00
-      afternoon: { color: '#14B8A6', icon: '🌞', label: 'Afternoon' }, // 12:00 ≤ start < 16:00
-      evening:   { color: '#8B5CF6', icon: '🌙', label: 'Evening' },   // start ≥ 16:00
+      morning:   { color: '#6B8CAE', icon: '🌅', label: 'Morning' },   // muted slate blue (dawn)
+      afternoon: { color: '#7A8B6B', icon: '🌞', label: 'Afternoon' }, // muted sage    (midday)
+      evening:   { color: '#7A6B8C', icon: '🌙', label: 'Evening' },   // dusty violet  (dusk)
     };
     function zoneFor(shift) {
       if (!shift) return null;
@@ -1304,8 +1305,9 @@
       html += `<div class="head" style="text-align:left; padding-left:12px;">Staff</div>`;
       ROSTER_DAYS.forEach((d, idx) => {
         const isWeekend = idx >= 5;
-        const headBg = isWeekend ? 'rgba(209,75,127,0.15)' : '';
-        const headFg = isWeekend ? '#D14B7F' : '';
+        // Muted rose for weekend headers — signals busier day without shouting.
+        const headBg = isWeekend ? 'rgba(156,107,114,0.14)' : '';
+        const headFg = isWeekend ? '#9C6B72' : '';
         const w = weatherForDay(idx);
         const weatherChip = w
           ? `<div style="font-size:11px; font-weight:400; margin-top:2px; opacity:0.85;" title="${w.tempMax}° · ${w.precip.toFixed(1)}mm rain">${w.emoji} ${w.tempMax}°</div>`
