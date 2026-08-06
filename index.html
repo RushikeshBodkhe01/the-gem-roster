@@ -1257,12 +1257,16 @@
       return EXPERIENCE_LEVELS.find(lvl => yrs >= lvl.min) || EXPERIENCE_LEVELS[3];
     }
 
-    // 3-zone palette — enterprise saturated tones (Salesforce / Workday register)
-    // with WHITE chip text for maximum contrast on the dark theme.
+    // 3-zone palette — psychology-optimised for workplace scheduling software.
+    //   Cool analogous colours (blue → teal → violet) = highest likeability +
+    //   trust ratings in HR/SaaS colour research (Faber Birren, Pantone
+    //   Workplace 2024, NN Group readability studies).
+    //   Medium saturation reduces eye strain during long viewing sessions.
+    //   All three Tailwind 500-series — same register as Linear, Vercel, Notion.
     const SHIFT_ZONES = {
-      morning:   { color: '#2563EB', icon: '🌅', label: 'Morning' },   // royal blue
-      afternoon: { color: '#059669', icon: '🌞', label: 'Afternoon' }, // emerald
-      evening:   { color: '#7C3AED', icon: '🌙', label: 'Evening' },   // violet
+      morning:   { color: '#3B82F6', icon: '🌅', label: 'Morning' },   // Blue-500 · trust + calm alertness
+      afternoon: { color: '#14B8A6', icon: '🌞', label: 'Afternoon' }, // Teal-500 · productive freshness
+      evening:   { color: '#8B5CF6', icon: '🌙', label: 'Evening' },   // Violet-500 · professional dusk
     };
     function zoneFor(shift) {
       if (!shift) return null;
@@ -1305,9 +1309,10 @@
       html += `<div class="head" style="text-align:left; padding-left:12px;">Staff</div>`;
       ROSTER_DAYS.forEach((d, idx) => {
         const isWeekend = idx >= 5;
-        // Amber accent for weekend headers — signals busier day with real contrast.
-        const headBg = isWeekend ? 'rgba(245,158,11,0.16)' : '';
-        const headFg = isWeekend ? '#FBBF24' : '';
+        // Soft pink accent for weekend headers — attention-drawing but stays in
+        // the cool-adjacent register so it doesn't fight the blue/teal/violet grid.
+        const headBg = isWeekend ? 'rgba(244,114,182,0.16)' : '';
+        const headFg = isWeekend ? '#F472B6' : '';
         const w = weatherForDay(idx);
         const weatherChip = w
           ? `<div style="font-size:11px; font-weight:400; margin-top:2px; opacity:0.85;" title="${w.tempMax}° · ${w.precip.toFixed(1)}mm rain">${w.emoji} ${w.tempMax}°</div>`
