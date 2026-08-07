@@ -1430,6 +1430,9 @@
       const originalText = btn.textContent;
       btn.disabled = true;
       btn.textContent = '⏳ Generating…';
+      // Instant visible feedback on the grid so the user knows something is happening
+      const wrap = document.getElementById('roster-grid-wrap');
+      if (wrap) wrap.style.opacity = '0.35';
       setTimeout(async () => {
         try {
         const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -1603,11 +1606,13 @@
           console.error('autoGenerateRoster failed:', err);
           toast('Generation failed — check console');
         } finally {
-          // Always re-enable the button so a single failure doesn't lock the UI.
+          // Always re-enable the button + restore grid opacity, whatever happened.
           btn.disabled = false;
           btn.textContent = originalText;
+          const wrap = document.getElementById('roster-grid-wrap');
+          if (wrap) wrap.style.opacity = '';
         }
-      }, 2000);
+      }, 400); // shorter delay — response feels instant, not laggy
     }
     window.autoGenerateRoster = autoGenerateRoster;
 
