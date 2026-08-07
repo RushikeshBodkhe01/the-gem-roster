@@ -1548,8 +1548,23 @@
 
         // ─── STEP 3: Fill day-by-day, slot-by-slot ─────────────────────────
         // Order: morning → fullday → afternoon (market already handled above).
+        // Seeded Fisher-Yates: shuffle the day-iteration order per run so different
+        // days get first pick of the top candidates. This is the primary variety
+        // driver — makes each auto-gen click produce a visibly different rota.
+        function seededShuffle(arr, seed) {
+          const out = [...arr];
+          let s = seed | 0;
+          for (let i = out.length - 1; i > 0; i--) {
+            s = (s * 9301 + 49297) | 0;
+            const r = ((s >>> 0) % 233280) / 233280;
+            const j = Math.floor(r * (i + 1));
+            [out[i], out[j]] = [out[j], out[i]];
+          }
+          return out;
+        }
         function fillSlots(relaxTarget) {
-          for (let d = 0; d < 7; d++) {
+          const dayOrder = seededShuffle([0,1,2,3,4,5,6], autoGenRunCount * 7919 + (relaxTarget ? 1 : 0));
+          for (const d of dayOrder) {
             const need = ADJUSTED_NEEDS[d];
             ['morning', 'fullday', 'afternoon'].forEach(slot => {
               const want = need[slot] || 0;
