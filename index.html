@@ -1053,8 +1053,9 @@
       staffRow({ id:'s4', name:'Staff D', init:'D',                 pos:'Senior Staff',      tier:'T3', weekly_hours_ceiling:20,                    can_open:true,  can_close:false, can_deli:true,                  anchor_day:'Fri', special_role:'deli_manager'           }),
       staffRow({ id:'s5', name:'Staff E', init:'E',                 pos:'Staff',             tier:'T2', weekly_hours_ceiling:35,                    can_open:true,  can_close:true,  can_deli:true,                                    rtw_type:'Stamp 2',   rtw_expiry:'2026-05-28' }),
       staffRow({ id:'s6', name:'Staff F', init:'F',                 pos:'Staff (Eves)',      tier:'T2', weekly_hours_ceiling:20,                                   can_close:true,                                  max_shifts_per_week:5, fixed_days:['Thu','Fri','Sat','Sun'] }),
+      staffRow({ id:'s7', name:'Staff G', init:'G',                 pos:'Staff',             tier:'T2', weekly_hours_ceiling:35,                    can_open:true,  can_close:true,  can_deli:true                                                                                          }),
     ];
-    const STATUS = { 's1':'in','s2':'soon','s3':'off','s4':'in','s5':'off','s6':'soon' };
+    const STATUS = { 's1':'in','s2':'soon','s3':'off','s4':'in','s5':'off','s6':'soon','s7':'in' };
 
     // Per-staff personal + employment details (anonymised). Realistic but fake —
     // no real PPSN or bank numbers. Used by the Staff Detail modal.
@@ -1065,6 +1066,7 @@
       s4:  { phone:'+353 87 555 0107', address:'Address line, Greater Dublin',    eircode:'D13 W004', dob:'1990-01-29', emergency_name:'Sibling of D',  emergency_phone:'+353 87 555 0108', emergency_relation:'Sibling', start_date:'2021-03-09', ppsn_last4:'7766C', bank_name:'AIB',     bank_last4:'3340', notes:'Deli manager. Mornings only — no closes. Fri anchor.' },
       s5:  { phone:'+353 85 555 0109', address:'Address line, Greater Dublin',    eircode:'D13 V552', dob:'2001-06-15', emergency_name:'Sibling of E',  emergency_phone:'+353 85 555 0110', emergency_relation:'Sibling', start_date:'2024-09-02', ppsn_last4:'8821B', bank_name:'Revolut', bank_last4:'2156', notes:'Stamp 2 student visa — 20h cap during term. Renews 2026-05-28 (urgent).' },
       s6:  { phone:'+353 87 555 0111', address:'Address line, Greater Dublin',    eircode:'D13 K820', dob:'1995-09-30', emergency_name:'Parent of F',   emergency_phone:'+353 87 555 0112', emergency_relation:'Parent',  start_date:'2023-06-12', ppsn_last4:'9090C', bank_name:'BOI',     bank_last4:'5544', notes:'Evening specialist. Locked Thu–Sun only — has another weekday job.' },
+      s7:  { phone:'+353 87 555 0113', address:'Address line, Greater Dublin',    eircode:'D13 L228', dob:'1997-11-05', emergency_name:'Sibling of G',  emergency_phone:'+353 87 555 0114', emergency_relation:'Sibling', start_date:'2023-11-20', ppsn_last4:'1122G', bank_name:'AIB',     bank_last4:'6633', notes:'Flexible staff — covers mornings, days and evenings.' },
     };
     // Merge details into each STAFF row so callers can read s.phone, s.address, etc.
     STAFF.forEach(s => { const d = STAFF_DETAILS[s.id]; if (d) Object.assign(s, d); });
@@ -1422,10 +1424,42 @@
       return adj;
     }
 
-    // Track how many times auto-gen has run so we can vary the output each time
-    // (Fisher-Yates seed) — deterministic algorithm otherwise produces identical
-    // rosters on consecutive clicks and users think the button is broken.
+    // Track auto-gen clicks so we rotate through the 20 hand-crafted rosters.
     let autoGenRunCount = 0;
+
+    /* ─── 20 pre-built rosters (from Excel: 20_Week_Roster_7Employees_AllUnique) ──
+       Each entry maps staff id → 7-day shift array (Mon..Sun).
+       Shift codes: M = morning (07:00-15:00), D = day/fullday (08:00-18:00),
+       E = evening (15:00-22:00), X = weekend short (14:00-20:00), OFF = day off. */
+    const SHIFT_CODE_TIMES = {
+      'M':   { start: '07:00', end: '15:00' },
+      'D':   { start: '08:00', end: '18:00' },
+      'E':   { start: '15:00', end: '22:00' },
+      'X':   { start: '14:00', end: '20:00' },
+      'OFF': null,
+    };
+    const HAND_CRAFTED_ROSTERS = [
+      { s1:['OFF','OFF','M','M','M','E','X'], s2:['E','OFF','E','E','OFF','M','E'], s3:['OFF','D','OFF','D','D','D','OFF'], s4:['M','M','M','OFF','M','OFF','OFF'], s5:['E','E','E','E','OFF','E','OFF'], s6:['D','D','OFF','D','D','OFF','OFF'], s7:['M','M','M','M','M','OFF','OFF'] },
+      { s1:['E','OFF','E','OFF','E','D','M'], s2:['D','D','OFF','D','D','OFF','OFF'], s3:['M','M','OFF','OFF','M','E','X'], s4:['E','E','E','E','OFF','OFF','E'], s5:['D','OFF','D','D','D','OFF','OFF'], s6:['M','M','M','M','OFF','X','OFF'], s7:['OFF','E','E','OFF','E','E','X'] },
+      { s1:['M','M','OFF','M','M','OFF','M'], s2:['E','OFF','E','OFF','E','X','D'], s3:['D','OFF','D','D','OFF','E','OFF'], s4:['OFF','M','M','M','M','OFF','E'], s5:['E','E','E','OFF','E','D','OFF'], s6:['OFF','D','D','D','D','OFF','OFF'], s7:['M','OFF','OFF','M','M','E','X'] },
+      { s1:['OFF','M','M','OFF','M','E','X'], s2:['E','E','E','OFF','OFF','M','E'], s3:['D','D','D','D','OFF','OFF','OFF'], s4:['M','M','OFF','M','M','X','OFF'], s5:['OFF','E','E','E','E','OFF','X'], s6:['D','OFF','D','D','D','OFF','OFF'], s7:['M','M','OFF','M','OFF','D','OFF'] },
+      { s1:['E','E','OFF','E','OFF','E','X'], s2:['D','D','D','D','OFF','OFF','OFF'], s3:['M','OFF','M','M','M','OFF','OFF'], s4:['OFF','E','E','E','OFF','X','D'], s5:['OFF','OFF','D','D','D','E','OFF'], s6:['M','M','OFF','OFF','M','M','E'], s7:['E','E','E','OFF','E','D','OFF'] },
+      { s1:['M','M','M','M','OFF','OFF','M'], s2:['OFF','E','E','E','E','X','OFF'], s3:['OFF','D','D','OFF','D','E','OFF'], s4:['M','OFF','M','M','M','M','OFF'], s5:['E','E','OFF','E','E','D','OFF'], s6:['D','D','D','OFF','D','OFF','OFF'], s7:['M','OFF','M','M','OFF','E','X'] },
+      { s1:['OFF','M','M','M','M','OFF','OFF'], s2:['OFF','E','OFF','E','E','X','D'], s3:['D','OFF','D','D','D','OFF','OFF'], s4:['M','OFF','OFF','M','M','M','E'], s5:['E','E','E','OFF','OFF','D','M'], s6:['OFF','D','D','D','OFF','X','OFF'], s7:['M','M','M','OFF','M','OFF','X'] },
+      { s1:['OFF','OFF','E','E','E','E','X'], s2:['D','OFF','D','D','OFF','M','OFF'], s3:['OFF','M','OFF','M','M','D','OFF'], s4:['E','E','E','OFF','E','OFF','D'], s5:['D','D','D','D','OFF','OFF','OFF'], s6:['M','M','OFF','M','M','OFF','E'], s7:['E','E','E','E','E','OFF','OFF'] },
+      { s1:['M','OFF','M','OFF','M','E','X'], s2:['E','E','OFF','E','E','M','OFF'], s3:['D','D','OFF','OFF','D','D','OFF'], s4:['M','M','M','M','OFF','OFF','OFF'], s5:['E','OFF','E','E','E','OFF','X'], s6:['D','D','D','D','OFF','OFF','OFF'], s7:['OFF','M','M','OFF','M','D','OFF'] },
+      { s1:['E','E','OFF','E','OFF','D','M'], s2:['D','D','D','D','OFF','OFF','OFF'], s3:['M','OFF','M','M','M','E','OFF'], s4:['OFF','E','E','E','OFF','M','E'], s5:['OFF','OFF','D','D','D','D','OFF'], s6:['M','M','OFF','OFF','M','X','D'], s7:['E','E','E','OFF','E','E','OFF'] },
+      { s1:['OFF','E','E','OFF','E','D','M'], s2:['D','D','D','OFF','OFF','X','OFF'], s3:['M','M','M','M','M','OFF','OFF'], s4:['E','E','OFF','E','E','M','OFF'], s5:['OFF','D','D','D','D','OFF','OFF'], s6:['M','OFF','M','M','M','X','OFF'], s7:['E','E','OFF','E','OFF','E','X'] },
+      { s1:['M','M','OFF','M','OFF','E','X'], s2:['E','E','E','E','OFF','OFF','E'], s3:['D','OFF','D','D','D','OFF','OFF'], s4:['OFF','M','M','M','OFF','X','D'], s5:['OFF','OFF','E','E','E','E','X'], s6:['D','D','OFF','OFF','D','M','OFF'], s7:['M','M','M','OFF','M','OFF','OFF'] },
+      { s1:['M','M','M','M','OFF','OFF','X'], s2:['OFF','E','E','E','E','M','OFF'], s3:['OFF','D','D','OFF','D','D','OFF'], s4:['M','OFF','M','M','M','X','OFF'], s5:['E','E','OFF','E','E','E','OFF'], s6:['D','D','D','OFF','D','OFF','OFF'], s7:['M','OFF','M','M','OFF','D','OFF'] },
+      { s1:['OFF','E','E','E','E','D','OFF'], s2:['OFF','D','OFF','D','D','X','OFF'], s3:['M','OFF','M','M','M','OFF','X'], s4:['E','OFF','OFF','E','E','M','E'], s5:['D','D','D','OFF','OFF','D','OFF'], s6:['OFF','M','M','M','OFF','X','D'], s7:['E','E','E','OFF','E','OFF','X'] },
+      { s1:['OFF','OFF','M','M','M','D','OFF'], s2:['E','OFF','E','E','OFF','X','D'], s3:['OFF','D','OFF','D','D','E','OFF'], s4:['M','M','M','OFF','M','OFF','E'], s5:['E','E','E','E','OFF','D','OFF'], s6:['D','D','OFF','D','D','OFF','OFF'], s7:['M','M','M','M','M','OFF','OFF'] },
+      { s1:['OFF','E','E','OFF','E','E','X'], s2:['D','D','D','OFF','OFF','M','OFF'], s3:['M','M','M','M','M','OFF','OFF'], s4:['E','E','OFF','E','E','X','OFF'], s5:['OFF','D','D','D','D','OFF','OFF'], s6:['M','OFF','M','M','M','M','OFF'], s7:['E','E','OFF','E','OFF','D','M'] },
+      { s1:['E','E','OFF','E','E','OFF','X'], s2:['D','OFF','D','OFF','D','M','OFF'], s3:['M','OFF','M','M','OFF','D','OFF'], s4:['OFF','E','E','E','E','OFF','D'], s5:['D','D','D','OFF','D','OFF','OFF'], s6:['OFF','M','M','M','M','M','OFF'], s7:['E','OFF','OFF','E','E','D','M'] },
+      { s1:['OFF','M','M','OFF','M','D','OFF'], s2:['E','E','E','OFF','OFF','X','D'], s3:['D','D','D','D','OFF','OFF','OFF'], s4:['M','M','OFF','M','M','M','OFF'], s5:['OFF','E','E','E','E','OFF','M'], s6:['D','OFF','D','D','D','OFF','OFF'], s7:['M','M','OFF','M','OFF','E','X'] },
+      { s1:['M','M','OFF','M','OFF','D','OFF'], s2:['E','E','E','E','OFF','OFF','D'], s3:['D','OFF','D','D','D','OFF','OFF'], s4:['OFF','M','M','M','OFF','M','E'], s5:['OFF','OFF','E','E','E','D','M'], s6:['D','D','OFF','OFF','D','X','OFF'], s7:['M','M','M','OFF','M','E','OFF'] },
+      { s1:['E','E','E','E','OFF','OFF','X'], s2:['OFF','D','D','D','D','OFF','OFF'], s3:['OFF','M','M','OFF','M','D','OFF'], s4:['E','OFF','E','E','E','X','OFF'], s5:['D','D','OFF','D','D','OFF','OFF'], s6:['M','M','M','OFF','M','OFF','E'], s7:['E','OFF','E','E','OFF','D','M'] },
+    ];
     function autoGenerateRoster(btn) {
       const originalText = btn.textContent;
       btn.disabled = true;
@@ -1433,189 +1467,33 @@
       // Instant visible feedback on the grid so the user knows something is happening
       const wrap = document.getElementById('roster-grid-wrap');
       if (wrap) wrap.style.opacity = '0.35';
-      setTimeout(async () => {
+      setTimeout(() => {
         try {
-        const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-        autoGenRunCount++;
+          autoGenRunCount++;
+          // Pick the next hand-crafted roster in rotation (wraps at 20).
+          const idx = (autoGenRunCount - 1) % HAND_CRAFTED_ROSTERS.length;
+          const pattern = HAND_CRAFTED_ROSTERS[idx];
 
-        // Make sure forecast is loaded so the auto-gen can react to weather.
-        // If it fails, fall back silently to base needs.
-        try { await fetchWeather(); } catch (e) { /* no-op */ }
-
-        // Build weather-adjusted DAY_NEEDS for this run.
-        const ADJUSTED_NEEDS = DAY_NEEDS.map((_, d) => weatherAdjustedNeeds(DAY_NEEDS, d));
-
-        // ─── Reset + state ─────────────────────────────────────────────────
-        const state = {};
-        ROSTER_STAFF.forEach(s => {
-          rosterData[s.id] = {};
-          for (let d = 0; d < 7; d++) rosterData[s.id][d] = null;
-          state[s.id] = {
-            target: targetDaysFor(s),
-            // Per-staff soft cap on hours — drives 20h/35h/40h variety in the roster.
-            targetHours: s.weekly_hours_ceiling || 36,
-            maxDays: Math.min(s.max_shifts_per_week || 5, MAX_WORKING_DAYS_PER_WEEK),
-            days: 0,
-            hours: 0,
-          };
-        });
-
-        // ─── Capability + cap check ────────────────────────────────────────
-        function canDo(s, dayIdx, slot, options = {}) {
-          // Already booked today?
-          if (rosterData[s.id][dayIdx]) return false;
-          // Fixed days lock
-          if (s.fixed_days.length > 0 && !s.fixed_days.includes(DAY_LABELS[dayIdx])) return false;
-          // Capabilities
-          if (slot === 'morning' && !s.can_open) return false;
-          if ((slot === 'afternoon' || slot === 'fullday') && !s.can_close) return false;
-          if (slot === 'market' && !s.can_market) return false;
-          // Hard caps (5 days, 40h)
-          if (state[s.id].days + 1 > state[s.id].maxDays) return false;
-          if (state[s.id].hours + SLOTS[slot].hours > IE_MAX_WEEKLY_HOURS) return false;
-          // IE OWTA §11: 11-hour consecutive rest between any two shifts
-          if (dayIdx > 0) {
-            const prev = rosterData[s.id][dayIdx - 1];
-            if (prev) {
-              const prevEnd = parseInt(prev.end.slice(0,2),10) + parseInt(prev.end.slice(3),10)/60;
-              const nextStart = parseInt(SLOTS[slot].start.slice(0,2),10) + parseInt(SLOTS[slot].start.slice(3),10)/60;
-              const restHours = (24 - prevEnd) + nextStart;
-              if (restHours < IRISH_LAWS.min_rest_between_shifts) return false;
-            }
-          }
-          // IE Stamp 2 student visa: 20h/week during term time
-          if (s.rtw_type === 'Stamp 2') {
-            const termTime = true; // Demo assumes term time; would be calendar-based in prod
-            const cap = termTime ? IRISH_LAWS.stamp2_term_cap_hours : IRISH_LAWS.stamp2_holiday_cap_hours;
-            if (state[s.id].hours + SLOTS[slot].hours > cap) return false;
-          }
-          // Soft targets — respect unless we explicitly relax (catch-pass).
-          // Hours target gives the 20/35/40 variety; days target keeps everyone off 7-day weeks.
-          if (!options.relaxTarget) {
-            if (state[s.id].hours + SLOTS[slot].hours > state[s.id].targetHours) return false;
-            if (state[s.id].days >= state[s.id].target) return false;
-          }
-          return true;
-        }
-        function place(s, dayIdx, slot) {
-          rosterData[s.id][dayIdx] = { start: SLOTS[slot].start, end: SLOTS[slot].end };
-          state[s.id].days += 1;
-          state[s.id].hours += SLOTS[slot].hours;
-        }
-        function placedOnDay(dayIdx) {
-          return ROSTER_STAFF.filter(s => rosterData[s.id][dayIdx]);
-        }
-        function seniorOverlapping(dayIdx, slot) {
-          // Is there a non-T1 staff whose shift overlaps with this slot's hours?
-          const slotStart = parseInt(SLOTS[slot].start.slice(0,2),10) * 60 + parseInt(SLOTS[slot].start.slice(3),10);
-          const slotEnd   = parseInt(SLOTS[slot].end.slice(0,2),10)   * 60 + parseInt(SLOTS[slot].end.slice(3),10);
-          return placedOnDay(dayIdx).some(other => {
-            if (other.tier === 'T1') return false;
-            const sh = rosterData[other.id][dayIdx];
-            const oStart = parseInt(sh.start.slice(0,2),10)*60 + parseInt(sh.start.slice(3),10);
-            const oEnd   = parseInt(sh.end.slice(0,2),10)*60   + parseInt(sh.end.slice(3),10);
-            return oStart < slotEnd && oEnd > slotStart;
+          // Reset every ROSTER_STAFF entry so orphan keys from prior runs are cleared.
+          ROSTER_STAFF.forEach(s => {
+            rosterData[s.id] = {};
+            for (let d = 0; d < 7; d++) rosterData[s.id][d] = null;
           });
-        }
 
-        // Tier ordering: T3 → T2 → T1. Within tier, managers first.
-        const tierRank = { T3: 3, T2: 2, T1: 1 };
-        const senior2junior = (a, b) =>
-          (tierRank[b.tier] - tierRank[a.tier]) ||
-          ((b.role === 'manager' ? 1 : 0) - (a.role === 'manager' ? 1 : 0));
+          // Apply the pattern: for each staff, walk their 7-day shift-code array.
+          Object.keys(pattern).forEach(sid => {
+            const shifts = pattern[sid];
+            if (!rosterData[sid]) rosterData[sid] = {};
+            for (let d = 0; d < 7; d++) {
+              rosterData[sid][d] = SHIFT_CODE_TIMES[shifts[d]] || null;
+            }
+          });
 
-        // ─── STEP 1: Anchor days ───────────────────────────────────────────
-        // Staff C Wed → fullday (closer). Staff D Fri → morning (no close).
-        ROSTER_STAFF.forEach(s => {
-          if (!s.anchor_day) return;
-          const dayIdx = DAY_LABELS.indexOf(s.anchor_day);
-          if (dayIdx < 0) return;
-          const anchorSlot = s.can_close ? 'fullday' : 'morning';
-          if (canDo(s, dayIdx, anchorSlot)) place(s, dayIdx, anchorSlot);
-        });
-
-        // ─── STEP 2: Market specialists Sat + Sun ──────────────────────────
-        // With the 6-person team, only Supervisor has can_market. Kept as a slot
-        // rather than removed so a future can_market hire drops in cleanly.
-        [5, 6].forEach(dayIdx => {
-          if (!ADJUSTED_NEEDS[dayIdx].market) return;
-          const preferred = ['s2'];
-          for (const id of preferred) {
-            const s = ROSTER_STAFF.find(x => x.id === id);
-            if (s && canDo(s, dayIdx, 'market')) { place(s, dayIdx, 'market'); break; }
-          }
-        });
-
-        // ─── STEP 3: Fill day-by-day, slot-by-slot ─────────────────────────
-        // Order: morning → fullday → afternoon (market already handled above).
-        // Seeded Fisher-Yates: shuffle the day-iteration order per run so different
-        // days get first pick of the top candidates. This is the primary variety
-        // driver — makes each auto-gen click produce a visibly different rota.
-        function seededShuffle(arr, seed) {
-          const out = [...arr];
-          let s = seed | 0;
-          for (let i = out.length - 1; i > 0; i--) {
-            s = (s * 9301 + 49297) | 0;
-            const r = ((s >>> 0) % 233280) / 233280;
-            const j = Math.floor(r * (i + 1));
-            [out[i], out[j]] = [out[j], out[i]];
-          }
-          return out;
-        }
-        function fillSlots(relaxTarget) {
-          const dayOrder = seededShuffle([0,1,2,3,4,5,6], autoGenRunCount * 7919 + (relaxTarget ? 1 : 0));
-          for (const d of dayOrder) {
-            const need = ADJUSTED_NEEDS[d];
-            ['morning', 'fullday', 'afternoon'].forEach(slot => {
-              const want = need[slot] || 0;
-              // Count what's already placed in this slot today
-              const already = placedOnDay(d).filter(s => {
-                const sh = rosterData[s.id][d];
-                return sh && sh.start === SLOTS[slot].start && sh.end === SLOTS[slot].end;
-              }).length;
-              let placed = already;
-
-              // Candidates ranked by seniority; for morning, deprioritise T1.
-              // Small random tiebreaker (seeded from run count) so two clicks with
-              // identical inputs produce visibly different but equally-valid rosters.
-              const jitter = (id) => {
-                // Simple deterministic hash mixed with the run counter → reproducible per-run variety.
-                let h = autoGenRunCount * 9301;
-                for (let i = 0; i < id.length; i++) h = (h * 33 + id.charCodeAt(i)) | 0;
-                return (h & 0xffff) / 0xffff; // 0..1
-              };
-              const candidates = [...ROSTER_STAFF].sort((a, b) => {
-                if (slot === 'morning') {
-                  if (a.tier === 'T1' && b.tier !== 'T1') return 1;
-                  if (b.tier === 'T1' && a.tier !== 'T1') return -1;
-                }
-                const tierDiff = senior2junior(a, b);
-                if (tierDiff !== 0) return tierDiff;
-                // Same tier → randomize order per run
-                return jitter(a.id) - jitter(b.id);
-              });
-
-              for (const s of candidates) {
-                if (placed >= want) break;
-                // T1 paired-only must have a senior on the floor at the same time
-                if (s.paired_only && !seniorOverlapping(d, slot)) continue;
-                if (canDo(s, d, slot, { relaxTarget })) {
-                  place(s, d, slot);
-                  placed++;
-                }
-              }
-            });
-          }
-        }
-        fillSlots(false);                              // honour soft targets first
-        fillSlots(true);                               // catch pass — relax soft target, still under hard caps
-
-        // ─── Re-render ─────────────────────────────────────────────────────
-        paintRosterGrid(document.getElementById('roster-grid-wrap'));
-        saveRoster();
-        // Recompute compliance flags based on the freshly generated roster.
-        if (typeof renderComplianceCard === 'function') renderComplianceCard();
-        toast('Roster generated · Edit any cell to adjust');
+          // Re-render + persist + refresh compliance.
+          paintRosterGrid(document.getElementById('roster-grid-wrap'));
+          saveRoster();
+          if (typeof renderComplianceCard === 'function') renderComplianceCard();
+          toast(`Roster ${idx + 1} of ${HAND_CRAFTED_ROSTERS.length} loaded`);
         } catch (err) {
           // Any error anywhere in the algorithm — surface it and keep the button usable.
           console.error('autoGenerateRoster failed:', err);
@@ -2853,7 +2731,7 @@
     /* ─── LEAVE BALANCE (per-staff donut chart) ─────────────────────────────
        Hours remaining in the current annual leave year. Max entitlement =
        160h (Irish full-time standard: 4 weeks × 40h per OWTA 1997 §19). */
-    const LEAVE_HOURS = { s1:120, s2:106, s3:67, s4:15, s5:91, s6:45 };
+    const LEAVE_HOURS = { s1:120, s2:106, s3:67, s4:15, s5:91, s6:45, s7:78 };
     const LEAVE_ENTITLEMENT = 160;
     function renderLeaveBalances() {
       const el = document.getElementById('leave-balance-grid');
