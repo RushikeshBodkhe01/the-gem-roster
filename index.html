@@ -482,7 +482,7 @@
               <div class="rtw-row urgent">
                 <span class="avatar avatar-sm" style="background:#3F7BAF;">E</span>
                 <div class="rtw-text">
-                  <div class="rtw-name">Staff E</div>
+                  <div class="rtw-name">Echo</div>
                   <div class="rtw-meta">Stamp 2 (Student) · expires 2026-05-28</div>
                 </div>
                 <span class="rtw-badge urgent">1 day</span>
@@ -1025,7 +1025,7 @@
       let h = 5381; for (let i = 0; i < seed.length; i++) { h = ((h << 5) + h) + seed.charCodeAt(i); h |= 0; }
       return PALETTE[Math.abs(h) % PALETTE.length];
     }
-    // 6-person team for trial demo: Manager, Supervisor, Staff C–F.
+    // 7-person team for trial demo: Manager, Supervisor + NATO-alphabet staff (Charlie–Golf).
     // mgr is kept as a derived convenience flag (s.role === 'manager').
     function staffRow(o) {
       return Object.assign({
@@ -1048,12 +1048,12 @@
     const STAFF = [
       staffRow({ id:'s1', name:'Manager',    init:'M', role:'manager', pos:'Store Manager',     tier:'T3', weekly_hours_ceiling:40, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true                                                                       }),
       staffRow({ id:'s2', name:'Supervisor', init:'S', role:'manager', pos:'Assistant Manager', tier:'T3', weekly_hours_ceiling:35, hourly_rate:16.50, can_open:true,  can_close:true,  can_deli:true,  can_market:true                                                       }),
-      staffRow({ id:'s3', name:'Staff C', init:'C',                 pos:'Senior Staff',      tier:'T3', weekly_hours_ceiling:40,                    can_open:true,  can_close:true,  can_deli:true,                  anchor_day:'Wed'                                       }),
-      // Staff D: mornings only — all shifts end by 15:00 (handover). Confirmed deli_manager + Fri anchor. Part-time (20h).
-      staffRow({ id:'s4', name:'Staff D', init:'D',                 pos:'Senior Staff',      tier:'T3', weekly_hours_ceiling:20,                    can_open:true,  can_close:false, can_deli:true,                  anchor_day:'Fri', special_role:'deli_manager'           }),
-      staffRow({ id:'s5', name:'Staff E', init:'E',                 pos:'Staff',             tier:'T2', weekly_hours_ceiling:35,                    can_open:true,  can_close:true,  can_deli:true,                                    rtw_type:'Stamp 2',   rtw_expiry:'2026-05-28' }),
-      staffRow({ id:'s6', name:'Staff F', init:'F',                 pos:'Staff (Eves)',      tier:'T2', weekly_hours_ceiling:20,                                   can_close:true,                                  max_shifts_per_week:5, fixed_days:['Thu','Fri','Sat','Sun'] }),
-      staffRow({ id:'s7', name:'Staff G', init:'G',                 pos:'Staff',             tier:'T2', weekly_hours_ceiling:35,                    can_open:true,  can_close:true,  can_deli:true                                                                                          }),
+      staffRow({ id:'s3', name:'Charlie',  init:'C',                 pos:'Senior Staff',      tier:'T3', weekly_hours_ceiling:40,                    can_open:true,  can_close:true,  can_deli:true,                  anchor_day:'Wed'                                       }),
+      // Delta: mornings only — all shifts end by 15:00 (handover). Confirmed deli_manager + Fri anchor. Part-time (20h).
+      staffRow({ id:'s4', name:'Delta',    init:'D',                 pos:'Senior Staff',      tier:'T3', weekly_hours_ceiling:20,                    can_open:true,  can_close:false, can_deli:true,                  anchor_day:'Fri', special_role:'deli_manager'           }),
+      staffRow({ id:'s5', name:'Echo',     init:'E',                 pos:'Staff',             tier:'T2', weekly_hours_ceiling:35,                    can_open:true,  can_close:true,  can_deli:true,                                    rtw_type:'Stamp 2',   rtw_expiry:'2026-05-28' }),
+      staffRow({ id:'s6', name:'Foxtrot',  init:'F',                 pos:'Staff (Eves)',      tier:'T2', weekly_hours_ceiling:20,                                   can_close:true,                                  max_shifts_per_week:5, fixed_days:['Thu','Fri','Sat','Sun'] }),
+      staffRow({ id:'s7', name:'Golf',     init:'G',                 pos:'Staff',             tier:'T2', weekly_hours_ceiling:35,                    can_open:true,  can_close:true,  can_deli:true                                                                                          }),
     ];
     const STATUS = { 's1':'in','s2':'soon','s3':'off','s4':'in','s5':'off','s6':'soon','s7':'in' };
 
@@ -2095,7 +2095,7 @@
           { icon:'🇮🇪', label:'Sunday +33% premium',  law:'OWTA §14',     ok:true,  detail:'Applied in Payslip + Payroll' },
           { icon:'🏖️', label:'4 wks annual leave (8% accrual)', law:'OWTA §19', ok:true, detail:'Tracked per staff in Detail view' },
           { icon:'💶', label:'Min wage by age band',  law:'NMW Act 2000', ok: !issues.find(i => i.kind === 'min_wage'), detail:`€${IRISH_LAWS.min_wage_full.toFixed(2)} full · age-band adjusted` },
-          { icon:'🎓', label:'Stamp 2 20h term cap',  law:'Empl. Permits Act',  ok: !issues.find(i => i.kind === 'stamp2_cap'), detail:'Staff E (Stamp 2): auto-gen respects 20h cap' },
+          { icon:'🎓', label:'Stamp 2 20h term cap',  law:'Empl. Permits Act',  ok: !issues.find(i => i.kind === 'stamp2_cap'), detail:'Echo (Stamp 2): auto-gen respects 20h cap' },
           { icon:'🪪', label:'RTW expiry tracking',   law:'Empl. Permits Act',  ok: !issues.find(i => i.kind === 'rtw_expired'), detail: issues.find(i => i.kind === 'rtw_soon') ? '⚠ One staff RTW expiring within 30 days' : 'No expiries imminent' },
         ];
         const passing = rules.filter(r => r.ok).length;
@@ -2217,9 +2217,9 @@
       ACTIVE_STAFF.forEach((s, i) => {
         seed[s.id] = [0,0,0,0,0,0,0];
         // Drop in a few preferences so the grid isn't all-green
-        if (s.id === 's6') { seed[s.id] = [3,3,3,2,2,2,2]; }   // Staff F Thu-Sun only
-        if (s.id === 's4') { seed[s.id] = [1,1,1,1,1,1,3]; }   // Staff D mornings, Sun off
-        if (s.id === 's5') { seed[s.id] = [0,0,2,0,0,0,3]; }   // Staff E PM-leaning, Sun off
+        if (s.id === 's6') { seed[s.id] = [3,3,3,2,2,2,2]; }   // Foxtrot Thu-Sun only
+        if (s.id === 's4') { seed[s.id] = [1,1,1,1,1,1,3]; }   // Delta mornings, Sun off
+        if (s.id === 's5') { seed[s.id] = [0,0,2,0,0,0,3]; }   // Echo PM-leaning, Sun off
       });
       return seed;
     })();
