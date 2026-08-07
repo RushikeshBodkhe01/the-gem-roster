@@ -1422,12 +1422,18 @@
       return adj;
     }
 
+    // Track how many times auto-gen has run so we can vary the output each time
+    // (Fisher-Yates seed) — deterministic algorithm otherwise produces identical
+    // rosters on consecutive clicks and users think the button is broken.
+    let autoGenRunCount = 0;
     function autoGenerateRoster(btn) {
       const originalText = btn.textContent;
       btn.disabled = true;
       btn.textContent = '⏳ Generating…';
       setTimeout(async () => {
+        try {
         const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+        autoGenRunCount++;
 
         // Make sure forecast is loaded so the auto-gen can react to weather.
         // If it fails, fall back silently to base needs.
@@ -1552,12 +1558,23 @@
               let placed = already;
 
               // Candidates ranked by seniority; for morning, deprioritise T1.
+              // Small random tiebreaker (seeded from run count) so two clicks with
+              // identical inputs produce visibly different but equally-valid rosters.
+              const jitter = (id) => {
+                // Simple deterministic hash mixed with the run counter → reproducible per-run variety.
+                let h = autoGenRunCount * 9301;
+                for (let i = 0; i < id.length; i++) h = (h * 33 + id.charCodeAt(i)) | 0;
+                return (h & 0xffff) / 0xffff; // 0..1
+              };
               const candidates = [...ROSTER_STAFF].sort((a, b) => {
                 if (slot === 'morning') {
                   if (a.tier === 'T1' && b.tier !== 'T1') return 1;
                   if (b.tier === 'T1' && a.tier !== 'T1') return -1;
                 }
-                return senior2junior(a, b);
+                const tierDiff = senior2junior(a, b);
+                if (tierDiff !== 0) return tierDiff;
+                // Same tier → randomize order per run
+                return jitter(a.id) - jitter(b.id);
               });
 
               for (const s of candidates) {
@@ -1580,10 +1597,16 @@
         saveRoster();
         // Recompute compliance flags based on the freshly generated roster.
         if (typeof renderComplianceCard === 'function') renderComplianceCard();
-
-        btn.disabled = false;
-        btn.textContent = originalText;
         toast('Roster generated · Edit any cell to adjust');
+        } catch (err) {
+          // Any error anywhere in the algorithm — surface it and keep the button usable.
+          console.error('autoGenerateRoster failed:', err);
+          toast('Generation failed — check console');
+        } finally {
+          // Always re-enable the button so a single failure doesn't lock the UI.
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
       }, 2000);
     }
     window.autoGenerateRoster = autoGenerateRoster;
