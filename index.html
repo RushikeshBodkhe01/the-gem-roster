@@ -1493,7 +1493,7 @@
           paintRosterGrid(document.getElementById('roster-grid-wrap'));
           saveRoster();
           if (typeof renderComplianceCard === 'function') renderComplianceCard();
-          toast(`Roster ${idx + 1} of ${HAND_CRAFTED_ROSTERS.length} loaded`);
+          toast('Roster generated · Edit any cell to adjust');
         } catch (err) {
           // Any error anywhere in the algorithm — surface it and keep the button usable.
           console.error('autoGenerateRoster failed:', err);
